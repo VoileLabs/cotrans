@@ -1,12 +1,9 @@
-# 中文说明
-[点我](README_CN.md)
-
 # Cotrans
-Cotrans is a collaborative online image/manga translation platform base on [manga-image-translator](https://github.com/zyddnys/manga-image-translator). \
-One can view translated image/manga in browser through our tampermonkey extension or in apps if their developers choose to integrate Cotrans in them. \
-One can edit translation of an existing image/manga, add their own translation to an image/manga or simply request auto translation to read online image/manga.
+Cotrans 是一个基于[manga-image-translator](https://github.com/zyddnys/manga-image-translator)的合作图片/漫画翻译平台。 \
+你可以通过在浏览器内使用tampermonkey插件并安装我们的脚本实现查看翻译后图片、顶踩翻译，各个应用开发者可以接入我们的API接口在其应用内展示翻译后图片。 \
+你可以修改图片的翻译，为图片添加翻译，或者直接使用自动机翻看图。
 
-# Browser extension
+# 浏览器扩展
 For users with tampermonkey installed, you can download our extension from [here](https://github.com/VoileLabs/imgtrans-userscript). \
 For how to install tampermonkey, you can find tutorial here.
 
