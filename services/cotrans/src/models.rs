@@ -2,6 +2,7 @@
 use actix_web::http::StatusCode;
 use actix_web::web::{get, resource, HttpRequest, HttpResponse};
 use actix_web::{App, HttpServer, ResponseError};
+use bson::oid::ObjectId;
 use serde::Serialize;
 use serde_json;
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -73,4 +74,38 @@ pub enum SupportedTranslator {
     Google,
     DeepL,
     Youdao
+}
+
+#[derive(Debug, Serialize)]
+pub enum Translator {
+    User(ObjectId),
+    Machine(String)
+}
+
+#[derive(Debug, Serialize)]
+pub struct TranslatedImageJson {
+    // Metadata
+    pub created_at: bson::DateTime,
+    pub width: u32,
+    pub height: u32,
+    pub file_size: u64,
+
+    pub translator: Translator,
+
+
+    // URLs
+    pub cdn_url: String
+}
+
+#[derive(Debug, Serialize)]
+pub struct OriginalImageJson {
+    // Metadata
+    pub created_at: bson::DateTime,
+    pub width: u32,
+    pub height: u32,
+    pub file_size: u64,
+
+    // URLs
+    pub original_url: Option<String>,
+    pub cdn_url: Option<String>
 }

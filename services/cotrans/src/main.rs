@@ -37,7 +37,7 @@ async fn main() -> io::Result<()> {
 				.allow_any_header()
 				.allow_any_method()
 			)
-			.service(handlers::handle_get_final_product_v1)
+			.service(handlers::handle_api_v1_imghash_language)
 	})
 	.bind("0.0.0.0:8080")?
 	.run()
