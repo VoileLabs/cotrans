@@ -1,5 +1,5 @@
 
-use actix_web::{get, web, Error};
+use actix_web::{get, post, web, Error};
 use crate::{models::{ServiceError, GetFinalProductV1Response, TranslatedImageJson, OriginalImageJson}, context::AppContext};
 
 #[get("/api/v1/{imghash}/{language}.png")]

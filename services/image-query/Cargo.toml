@@ -1,0 +1,39 @@
+[package]
+name = "cotrans-image-query"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = { version = "1" }
+serde = { version = "1.0", features = ["derive"] }
+actix-web = "4.0.0-beta.14"
+actix-rt = "2.5.0"
+actix-cors = "0.6.0-beta.6"
+actix-multipart = "0.4.0-beta.13"
+bson = "2.0.1"
+rand = "0.8"
+chrono = "0.4"
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3.15"
+colored = "2"
+thiserror = "1.0.26"
+redlock = {git = "https://github.com/zyddnys/redlock-rs.git"}
+jwt-simple = {git = "https://github.com/zyddnys/rust-jwt-simple.git"}
+env_logger = "0.9.0"
+
+[dependencies.mongodb]
+version = "2.0.2"
+default-features = false
+features = ["async-std-runtime"]
+
+
+[dependencies.redis]
+version = "0.21.4"
+features = ["tokio-comp", "aio"]
+
+
+[profile.release]
+lto = true # Link Time Optimization (LTO)
+#panic = "abort"
