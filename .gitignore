@@ -1,2 +1,5 @@
 local-tests
 target/
+*.ckpt
+*.pyc
+__pycache__
