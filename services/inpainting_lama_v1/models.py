@@ -5,9 +5,9 @@ from pydantic import BaseModel, ValidationError, validator
 import json
 
 class V1InapintingLamaRequest(BaseModel) :
-    use_poisson_blending: Optional[bool] = False
-    cuda: Optional[bool] = False
-    inpainting_size: Optional[int] = 1024
+    use_poisson_blending: bool = False
+    cuda: bool = False
+    inpainting_size: int = 1024
 
     @classmethod
     def __get_validators__(cls):

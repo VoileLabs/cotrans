@@ -1,6 +1,6 @@
 
 from typing import List, Optional, Tuple
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError, validator
 
 import json
 
@@ -13,21 +13,11 @@ class TextRegionExchangeFormat(BaseModel) :
 	prob: Optional[float] = 0
 	direction: Optional[str]
 	
-class V1TextDetectionRequest(BaseModel):
-	text_threshold: float = 0.5
-	box_threshold: float = 0.7
-	area_threshold: float = 16
-	unclip_ratio: float = 2.3
+class V1OCRCTCRequest(BaseModel) :
+	regions: List[TextRegionExchangeFormat]
+	max_chunk_size: int = 16
 	cuda: bool = False
-	blur: bool = True
-	blur_ks: int = 17
-	blur_sigma_color: int = 80
-	blur_sigma_space: int = 80
-	target_ratio: float
-	pad_width: int
-	pad_height: int
-	width: int # original image width
-	height: int # original image height
+	text_prob_threshold: float = 0.3
 
 	@classmethod
 	def __get_validators__(cls):
@@ -39,9 +29,8 @@ class V1TextDetectionRequest(BaseModel):
 			return cls(**json.loads(value))
 		return value
 
-
-class V1TextDetectionResponse(BaseModel) :
-	regions: List[TextRegionExchangeFormat]
+class V1OCRCTCResponse(BaseModel) :
+	texts: List[TextRegionExchangeFormat]
 	version: str
 
 	@classmethod
@@ -53,4 +42,4 @@ class V1TextDetectionResponse(BaseModel) :
 		if isinstance(value, str):
 			return cls(**json.loads(value))
 		return value
-
+		
