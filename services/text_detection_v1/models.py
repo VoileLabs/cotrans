@@ -1,4 +1,5 @@
 
+from __future__ import annotations
 from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
@@ -12,7 +13,10 @@ class TextRegionExchangeFormat(BaseModel) :
 	text: Optional[str]
 	prob: Optional[float] = 0
 	direction: Optional[str]
-	
+	lines: List[TextRegionExchangeFormat] = []
+
+TextRegionExchangeFormat.update_forward_refs()
+
 class V1TextDetectionRequest(BaseModel):
 	text_threshold: float = 0.5
 	box_threshold: float = 0.7

@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from typing import List, Optional, Tuple
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel
 
 import json
 
@@ -14,14 +14,31 @@ class TextRegionExchangeFormat(BaseModel) :
 	prob: Optional[float] = 0
 	direction: Optional[str]
 	lines: List[TextRegionExchangeFormat] = []
-	
+
+from utils import Quadrilateral
+
 TextRegionExchangeFormat.update_forward_refs()
 
-class V1OCRCTCRequest(BaseModel) :
+class V1TextlineMergeRequest(BaseModel) :
+	gamma: float = 0.5
+	sigma: float = 2
+	std_threshold: float = 6
+	width: int
+	height: int
+	textlines: List[TextRegionExchangeFormat]
+
+	@classmethod
+	def __get_validators__(cls):
+		yield cls.validate_to_json
+
+	@classmethod
+	def validate_to_json(cls, value):
+		if isinstance(value, str):
+			return cls(**json.loads(value))
+		return value
+
+class V1TextlineMergeResponse(BaseModel) :
 	regions: List[TextRegionExchangeFormat]
-	max_chunk_size: int = 16
-	cuda: bool = False
-	text_prob_threshold: float = 0.3
 
 	@classmethod
 	def __get_validators__(cls):
@@ -32,18 +49,3 @@ class V1OCRCTCRequest(BaseModel) :
 		if isinstance(value, str):
 			return cls(**json.loads(value))
 		return value
-
-class V1OCRCTCResponse(BaseModel) :
-	texts: List[TextRegionExchangeFormat]
-	version: str
-
-	@classmethod
-	def __get_validators__(cls):
-		yield cls.validate_to_json
-
-	@classmethod
-	def validate_to_json(cls, value):
-		if isinstance(value, str):
-			return cls(**json.loads(value))
-		return value
-		

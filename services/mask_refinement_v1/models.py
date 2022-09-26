@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from typing import List, Optional, Tuple
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel
 
 import json
 
@@ -14,14 +14,14 @@ class TextRegionExchangeFormat(BaseModel) :
 	prob: Optional[float] = 0
 	direction: Optional[str]
 	lines: List[TextRegionExchangeFormat] = []
-	
+
+from utils import Quadrilateral
+
 TextRegionExchangeFormat.update_forward_refs()
 
-class V1OCRCTCRequest(BaseModel) :
-	regions: List[TextRegionExchangeFormat]
-	max_chunk_size: int = 16
-	cuda: bool = False
-	text_prob_threshold: float = 0.3
+class V1MaskRefinementRequest(BaseModel) :
+	method: str = 'fit_text'
+	textlines: List[TextRegionExchangeFormat]
 
 	@classmethod
 	def __get_validators__(cls):
@@ -33,8 +33,7 @@ class V1OCRCTCRequest(BaseModel) :
 			return cls(**json.loads(value))
 		return value
 
-class V1OCRCTCResponse(BaseModel) :
-	texts: List[TextRegionExchangeFormat]
+class V1MaskRefinementResponse(BaseModel) :
 	version: str
 
 	@classmethod
@@ -46,4 +45,3 @@ class V1OCRCTCResponse(BaseModel) :
 		if isinstance(value, str):
 			return cls(**json.loads(value))
 		return value
-		
