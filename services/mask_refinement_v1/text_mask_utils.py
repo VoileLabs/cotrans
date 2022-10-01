@@ -170,11 +170,11 @@ def unsharp(image) :
 
 from utils import Quadrilateral
 
-async def run_refine_mask(raw_image: np.ndarray, raw_mask: np.ndarray, textlines: List[Quadrilateral], method: str = 'fit_text') -> np.ndarray :
+def run_refine_mask(raw_image: np.ndarray, raw_mask: np.ndarray, textlines: List[Quadrilateral], method: str = 'fit_text') -> Tuple[np.ndarray, str] :
 	mask_resized = cv2.resize(raw_mask, (raw_image.shape[1] // 2, raw_image.shape[0] // 2), interpolation = cv2.INTER_LINEAR)
 	img_resized_2 = cv2.resize(raw_image, (raw_image.shape[1] // 2, raw_image.shape[0] // 2), interpolation = cv2.INTER_LINEAR)
 	mask_resized[mask_resized > 0] = 255
-	text_lines = [(a.aabb.x // 2, a.aabb.y // 2, a.aabb.w // 2, a.aabb.h // 2) for a in textlines]
+	text_lines = [(int(a.aabb.x // 2), int(a.aabb.y // 2), int(a.aabb.w // 2), int(a.aabb.h // 2)) for a in textlines]
 	mask_ccs, cc2textline_assignment = filter_masks(mask_resized, text_lines)
 	if mask_ccs :
 		if method == 'fit_text' :

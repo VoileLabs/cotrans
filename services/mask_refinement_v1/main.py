@@ -30,17 +30,18 @@ class JsonAndImageResponse(Response) :
 		ans.write(f"\r\n--{boundary}--".encode('utf-8'))
 		return ans.getvalue()
 
-@app.post("/v1/detect")
-async def detect(config: V1MaskRefinementRequest = Form(), image: UploadFile = File(), mask: UploadFile = File()) :
+@app.post("/v1/refine")
+async def refine(config: V1MaskRefinementRequest = Form(), image: UploadFile = File(), mask: UploadFile = File()) :
 	img = Image.open(image.file)
 	img_np = np.asarray(img)
-	mask = Image.open(image.mask)
-	mask_np = np.asarray(img)
-	if image.shape[:2] != mask.shape[:2] :
-		raise ValueError(f'Image size (={image.shape[:2]}) must be the same as mask size (={mask.shape[:2]})')
+	mask = Image.open(mask.file)
+	mask_np = np.asarray(mask)
+	if img_np.shape[:2] != img_np.shape[:2] :
+		raise ValueError(f'Image size (={img_np.shape[:2]}) must be the same as mask size (={img_np.shape[:2]})')
 	if len(mask_np.shape) != 2 :
 		if mask_np.shape[-1] == 3 :
 			mask_np = mask_np[:, :, 0]
-	mask_np, version = run_refine_mask(img_np, mask_np, config.textlines, config.method)
+	textlines = [Quadrilateral.from_tref(t, img.width, img.height) for t in config.textlines]
+	mask_np, version = run_refine_mask(img_np, mask_np, textlines, config.method)
 	resp = V1MaskRefinementResponse(version = version)
 	return JsonAndImageResponse({"json": resp.dict(exclude_none = True), "img": Image.fromarray(mask_np), "img-type": "png"})

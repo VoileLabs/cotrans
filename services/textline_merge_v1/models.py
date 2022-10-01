@@ -38,6 +38,7 @@ class V1TextlineMergeRequest(BaseModel) :
 		return value
 
 class V1TextlineMergeResponse(BaseModel) :
+	version: str
 	regions: List[TextRegionExchangeFormat]
 
 	@classmethod
