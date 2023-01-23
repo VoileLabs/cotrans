@@ -3,5 +3,3 @@ local-tests
 *.pyc
 __pycache__
 target/
-/gateway/src/prisma.rs
-node_modules

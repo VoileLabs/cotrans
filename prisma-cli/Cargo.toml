@@ -1,0 +1,16 @@
+[package]
+name = "prisma-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies.prisma-client-rust-cli]
+git = "https://github.com/Brendonovich/prisma-client-rust"
+tag = "0.6.4"
+features = ["postgresql"]
+
+[target.x86_64-unknown-linux-musl.dependencies]
+openssl = { version = "0.10.45", features = ["vendored"] }
