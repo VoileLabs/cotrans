@@ -158,9 +158,9 @@ async fn send_watch_msg(
       .await?;
       return Ok(true);
     }
-    TaskWatchMessage::Error => {
+    TaskWatchMessage::Error(retry) => {
       send_msg(socket, QueryV1Message::Error { error_id: None }).await?;
-      return Ok(true);
+      return Ok(!retry);
     }
   }
 }

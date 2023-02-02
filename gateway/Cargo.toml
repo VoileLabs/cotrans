@@ -38,6 +38,9 @@ tower = "0.4.13"
 tower-http = { version = "0.3.5", features = ["full"] }
 reqwest = { version = "0.11.14", features = ["brotli", "gzip", "deflate"] }
 prost = "0.11.6"
+metrics = "0.20.1"
+metrics-exporter-prometheus = "0.11.0"
+axum-prometheus = "0.3.0"
 
 image = "0.24.5"
 image_hasher = "1.1.2"

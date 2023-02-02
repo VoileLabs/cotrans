@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, sync::Arc, time::Duration};
+use std::{
+  collections::VecDeque,
+  sync::Arc,
+  time::{Duration, Instant},
+};
 
 use axum::{
   body::Bytes,
@@ -16,6 +20,7 @@ use cotrans_proto_rs::gateway::mit::{web_socket_message, NewTask, WebSocketMessa
 use dashmap::DashMap;
 use futures::{Sink, SinkExt, Stream, StreamExt};
 use http::StatusCode;
+use metrics::{counter, decrement_gauge, gauge, histogram, increment_counter, increment_gauge};
 use prost::Message;
 use tokio::sync::{watch, Mutex, Notify};
 
@@ -32,7 +37,7 @@ pub enum TaskWatchMessage {
   Pending(usize),
   Status(String),
   Result(TaskResult),
-  Error,
+  Error(bool),
 }
 
 pub struct MITWorkersInner {
@@ -85,6 +90,11 @@ impl MITWorkersInner {
         continue;
       }
 
+      if db_task.failed_count >= 3 {
+        tracing::debug!(task_id = %db_task.id, failed_count = db_task.failed_count, "Skipping failed task");
+        continue;
+      }
+
       let id = db_task.id.clone();
       tracing::debug!(task_id = %id, "Resuming task");
       let Ok(task) = self.db_to_task(db_task, None).await else {
@@ -100,6 +110,9 @@ impl MITWorkersInner {
       self.data.tasks.insert(id, rx);
       queue.push_back((task, tx));
     }
+
+    counter!("mit_worker_task_dispatch_count", queue.len() as u64);
+    gauge!("mit_worker_queue_length", queue.len() as f64);
 
     self.data.notify.notify_waiters();
 
@@ -140,11 +153,13 @@ impl MITWorkersInner {
 
   pub async fn dispatch_task(&self, task: Task) {
     tracing::debug!(task_id = %task.id(), "Dispatching task");
+    increment_counter!("mit_worker_task_dispatch_count");
     // we lock the queue first to prevent other threads from dispatching the same task
     let mut queue = self.data.queue.lock().await;
     let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
     self.data.tasks.insert(task.id().to_owned(), rx);
     queue.push_back((task, tx));
+    increment_gauge!("mit_worker_queue_length", 1.);
     self.data.notify.notify_one();
   }
 
@@ -168,7 +183,7 @@ impl MITWorkersInner {
     source_image: Option<Bytes>,
   ) -> AppResult<watch::Receiver<TaskWatchMessage>> {
     // we lock the queue first to prevent other threads from dispatching the same task
-    let mut tasks = self.data.queue.lock().await;
+    let mut queue = self.data.queue.lock().await;
 
     let id = db_task.id.clone();
 
@@ -186,11 +201,15 @@ impl MITWorkersInner {
     //   .await?
     //   .ok_or_else(|| AppError::NotFound)?;
 
+    increment_counter!("mit_worker_task_dispatch_count");
+
     let task = self.db_to_task(db_task, source_image).await?;
 
-    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(tasks.len()));
+    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
     self.data.tasks.insert(id, rx.clone());
-    tasks.push_back((task, tx));
+    queue.push_back((task, tx));
+    increment_gauge!("mit_worker_queue_length", 1.);
+
     self.data.notify.notify_one();
 
     Ok(rx)
@@ -257,12 +276,21 @@ async fn worker_ws(
 async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
   let (mut sender, mut receiver) = socket.split();
 
+  increment_gauge!("mit_worker_count", 1.);
+  struct DropGuard {}
+  impl Drop for DropGuard {
+    fn drop(&mut self) {
+      decrement_gauge!("mit_worker_count", 1.);
+    }
+  }
+  let _guard = DropGuard {};
+
   loop {
-    let mut tasks = data.queue.lock().await;
-    let (mut task, tx) = if let Some(task) = tasks.pop_front() {
+    let mut queue = data.queue.lock().await;
+    let (mut task, tx) = if let Some(task) = queue.pop_front() {
       task
     } else {
-      drop(tasks);
+      drop(queue);
       loop {
         tokio::select! {
           _ = data.notify.notified() => {
@@ -286,14 +314,17 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
     };
 
     // notify other tasks position
-    for (i, (_, tx)) in tasks.iter_mut().enumerate() {
+    for (i, (_, tx)) in queue.iter_mut().enumerate() {
       _ = tx.send(TaskWatchMessage::Pending(i));
     }
 
-    drop(tasks);
+    decrement_gauge!("mit_worker_queue_length", 1.);
+
+    drop(queue);
 
     let task_id = task.id().to_owned();
     tracing::debug!(task_id = %task_id, "Executing task");
+    let time_start = Instant::now();
 
     match execute_task(
       &mut sender,
@@ -312,6 +343,11 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
         task.state = prisma::TaskState::Done.into();
 
         data.tasks.remove(&task_id);
+        increment_counter!("mit_worker_task_finish_count");
+        histogram!(
+          "mit_worker_task_duration_seconds",
+          time_start.elapsed().as_secs_f64()
+        );
 
         _ = tx.send(TaskWatchMessage::Result(result.clone()));
       }
@@ -323,6 +359,8 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
           task.failed_count,
           err
         );
+        increment_counter!("mit_worker_task_error_count");
+
         let db_ok = data
           .db
           .task()
@@ -336,14 +374,20 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
           .exec()
           .await
           .is_ok();
+
         if db_ok && task.failed_count < 3 {
-          _ = tx.send(TaskWatchMessage::Error);
+          _ = tx.send(TaskWatchMessage::Error(true));
+
           data.queue.lock().await.push_front((task, tx));
+          increment_gauge!("mit_worker_queue_length", 1.);
+
           data.notify.notify_one();
         } else {
+          _ = tx.send(TaskWatchMessage::Error(false));
+
           data.tasks.remove(&task_id);
-          _ = tx.send(TaskWatchMessage::Error);
         }
+
         if let AppError::AxumError(_) = err {
           return;
         }

@@ -2,8 +2,13 @@ use std::{env, net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::Result;
 use axum::{extract::FromRef, Router};
+use axum_prometheus::{
+  PrometheusMetricLayerBuilder, AXUM_HTTP_REQUESTS_DURATION_SECONDS, SECONDS_DURATION_BUCKETS,
+};
 use http::{header, request, HeaderValue, Method, Request};
 use hyper::Body;
+use metrics::{describe_counter, describe_gauge, describe_histogram};
+use metrics_exporter_prometheus::{Matcher, PrometheusBuilder};
 use mit_worker::MITWorkersInner;
 use tower_http::{
   compression::CompressionLayer,
@@ -65,6 +70,39 @@ async fn main() -> Result<()> {
     r2.clone(),
   ));
 
+  let (prometheus_layer, metric_handle) = PrometheusMetricLayerBuilder::new()
+    .with_ignore_patterns(&["/metrics"])
+    .with_group_patterns_as("/task/{id}/event/v1", &[("/task/:id/event/v1")])
+    .with_metrics_from_fn(|| {
+      PrometheusBuilder::new()
+        .set_buckets_for_metric(
+          Matcher::Full(AXUM_HTTP_REQUESTS_DURATION_SECONDS.to_string()),
+          SECONDS_DURATION_BUCKETS,
+        )
+        .unwrap()
+        .install_recorder()
+        .unwrap()
+    })
+    .build_pair();
+  describe_gauge!("mit_worker_count", "Number of mit workers");
+  describe_gauge!("mit_worker_queue_length", "Length of mit worker queue");
+  describe_counter!(
+    "mit_worker_task_dispatch_count",
+    "Number of mit worker tasks dispatched"
+  );
+  describe_counter!(
+    "mit_worker_task_finish_count",
+    "Number of mit worker tasks finished"
+  );
+  describe_counter!(
+    "mit_worker_task_error_count",
+    "Number of mit worker tasks errored"
+  );
+  describe_histogram!(
+    "mit_worker_task_duration_seconds",
+    "Duration of mit worker tasks"
+  );
+
   tracing::debug!("resuming mit workers tasks");
   mit_workers.resume().await?;
 
@@ -76,7 +114,7 @@ async fn main() -> Result<()> {
   };
 
   let router = Router::new()
-    .merge(routes::router())
+    .merge(routes::router(metric_handle))
     .with_state(state)
     .layer(
       CorsLayer::new()
@@ -112,7 +150,8 @@ async fn main() -> Result<()> {
         )
       }),
     )
-    .layer(CompressionLayer::new());
+    .layer(CompressionLayer::new())
+    .layer(prometheus_layer);
 
   let port = match env::var("PORT") {
     Ok(port) => port.parse()?,
