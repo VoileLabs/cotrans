@@ -376,7 +376,7 @@ where
     )
     .exec()
     .await?;
-  _ = tx.send(TaskWatchMessage::Status("running".to_owned()));
+  _ = tx.send(TaskWatchMessage::Status("pending".to_owned()));
 
   let param = task.param();
 

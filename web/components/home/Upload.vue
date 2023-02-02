@@ -387,11 +387,4 @@ const reset = () => {
       </label>
     </div>
   </div>
-
-  <div class="mt-1 text-xs text-zinc-700 text-center">
-    By uploading an image, you agree to our
-    <a href="#" class="text-sky-500">Terms of Service</a>
-    and
-    <a href="#" class="text-sky-500">Privacy Policy</a>.
-  </div>
 </template>

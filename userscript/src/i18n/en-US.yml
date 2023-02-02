@@ -1,0 +1,67 @@
+common:
+  source:
+    download-image: Downloading original image
+    download-image-progress: Downloading original image ({progress})
+    download-image-error: Error during original image download
+  client:
+    submit: Submitting translation
+    submit-progress: Submitting translation ({progress})
+    submit-error: Error during translation submission
+    download-image: Downloading translated image
+    download-image-progress: Downloading translated image ({progress})
+    download-image-error: Error during translated image download
+    resize: Resizing image
+    merging: Merging layers
+  status:
+    default: Unknown status
+    pending: Pending
+    pending_pos: Pending, {pos} in queue
+    upscaling: Upscaling
+    detection: Detecting text
+    ocr: Scanning text
+    mask_generation: Generating mask
+    inpainting: Inpainting
+    translating: Translating
+    render: Rendering
+    error: Error during translation
+    error-lang: Unsupported language
+  control:
+    translate: Translate
+    batch: Translate all
+    reset: Reset
+  batch:
+    progress: Translating ({count}/{total} finished)
+    finish: Translation finished
+    error: Translation finished with errors
+settings:
+  detection-resolution: Text detection resolution
+  render-text-orientation: Render text orientation
+  render-text-orientation-options:
+    auto: Follow source
+    horizontal: Horizontal only
+    vertical: Vertical only
+  reset: Reset Settings
+  target-language: Translate target language
+  target-language-options:
+    auto: Follow website
+  text-detector: Text detector
+  text-detector-options:
+    default: Default
+  title: Cotrans Manga Translator Settings
+  translator: Translator
+  script-language: Userscript language
+  script-language-options:
+    auto: Follow website language
+  inline-options-title: Current Settings
+  detection-resolution-desc: >-
+    The resolution used to scan texts on an image, higher value are better
+    suited for smaller texts.
+  script-language-desc: Language of this userscript.
+  render-text-orientation-desc: Overwrite the orientation of texts rendered in the translated image.
+  target-language-desc: The language that images are translated to.
+  text-detector-desc: The detector used to scan texts in an image.
+  translator-desc: The translate service used to translate texts.
+  translator-options:
+    none: None (remove texts)
+sponsor:
+  text: If you find this script helpful, please consider supporting us!

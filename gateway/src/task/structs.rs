@@ -296,9 +296,9 @@ pub enum Direction {
   Default,
   #[serde(rename = "auto")]
   Auto,
-  #[serde(rename = "h")]
+  #[serde(rename = "horizontal")]
   Horizontal,
-  #[serde(rename = "v")]
+  #[serde(rename = "vertical")]
   Vertical,
 }
 

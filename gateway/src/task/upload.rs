@@ -6,7 +6,7 @@ use axum::{
   routing::put,
   Json, Router,
 };
-use image::{imageops::FilterType, io::Reader as ImageReader, ImageFormat, ImageOutputFormat, DynamicImage};
+use image::{imageops::FilterType, io::Reader as ImageReader, ImageFormat, ImageOutputFormat};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
@@ -28,6 +28,8 @@ pub fn router() -> Router<AppState> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct UploadCreateRequest {
+  retry: Option<bool>,
+
   file: Bytes,
   mime: Option<String>,
 
@@ -62,6 +64,7 @@ async fn upload_post_v1(
 }
 
 async fn upload_parse_multipart_v1(mut multipart: Multipart) -> AppResult<UploadCreateRequest> {
+  let mut retry = None;
   let mut file = None;
   let mut mime = None;
   let mut target_language = None;
@@ -75,6 +78,12 @@ async fn upload_parse_multipart_v1(mut multipart: Multipart) -> AppResult<Upload
       .name()
       .ok_or_else(|| AppError::BadRequest("Form field missing name".to_string()))?;
     match name {
+      "retry" => {
+        let text = field.text().await?;
+        retry = Some(text.parse().map_err(|_| {
+          AppError::BadRequest("retry must be either empty, true or false".to_string())
+        })?);
+      }
       "file" => {
         let bytes = field.bytes().await?;
         file = Some(bytes);
@@ -124,7 +133,12 @@ async fn upload_parse_multipart_v1(mut multipart: Multipart) -> AppResult<Upload
     size,
   };
 
-  Ok(UploadCreateRequest { file, mime, param })
+  Ok(UploadCreateRequest {
+    retry,
+    file,
+    mime,
+    param,
+  })
 }
 
 async fn upload_create_v1(
@@ -134,6 +148,8 @@ async fn upload_create_v1(
   payload: UploadCreateRequest,
   retry: bool,
 ) -> AppJsonResult<UploadCreateResponse> {
+  let retry = payload.retry.unwrap_or(retry);
+
   let file = payload.file;
 
   let (image, png, hash, sha) = spawn_blocking(move || {

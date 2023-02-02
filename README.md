@@ -25,3 +25,4 @@
 | `prisma-cli` | Prisma CLI        |
 | `web`        | Website           |
 | `web-ext`    | Browser extension |
+| `userscript` | UserScript        |

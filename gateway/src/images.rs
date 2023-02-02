@@ -5,7 +5,6 @@ use image::{io::Reader as ImageReader, DynamicImage, ImageError, ImageFormat};
 use image_hasher::{FilterType, Hasher, HasherConfig};
 use once_cell::sync::Lazy;
 use ring::digest;
-use tokio::task::{spawn_blocking, JoinError};
 
 use crate::{error::AppResult, R2Client};
 

@@ -182,7 +182,7 @@ impl fmt::Display for AppError {
     let id = cuid::cuid().unwrap();
     let text = format!("{:#?}", self);
     tracing::debug!(id = %id, error = %text, "error");
-    write!(f, "{}", id)
+    write!(f, "{{\"error_id\": \"{}\"}}", id)
   }
 }
 

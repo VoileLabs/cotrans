@@ -1,0 +1,65 @@
+common:
+  source:
+    download-image: 正在拉取原图
+    download-image-progress: 正在拉取原图({progress})
+    download-image-error: 拉取原图出错
+  client:
+    submit: 正在提交翻译
+    submit-progress: 正在提交翻译({progress})
+    submit-error: 提交翻译出错
+    download-image: 正在下载图片
+    download-image-progress: 正在下载图片({progress})
+    download-image-error: 下载图片出错
+    resize: 正在缩放图片
+    merging: 正在合并图层
+  status:
+    default: 未知状态
+    pending: 正在等待
+    pending_pos: 正在等待，列队还有 {pos} 张图片
+    upscaling: 正在放大图片
+    detection: 正在检测文本
+    ocr: 正在识别文本
+    mask_generation: 正在生成文本掩码
+    inpainting: 正在修补图片
+    translating: 正在翻译文本
+    render: 正在渲染
+    error: 翻译出错
+    error-lang: 不支持的语言
+  control:
+    translate: 翻译
+    batch: 翻译全部
+    reset: 还原
+  batch:
+    progress: 翻译中({count}/{total})
+    finish: 翻译完成
+    error: 翻译完成(有失败)
+settings:
+  title: Cotrans 图片翻译器设置
+  inline-options-title: 设置当前翻译
+  detection-resolution: 文本扫描清晰度
+  text-detector: 文本扫描器
+  text-detector-options:
+    default: 默认
+  translator: 翻译服务
+  render-text-orientation: 渲染字体方向
+  render-text-orientation-options:
+    auto: 跟随原文本
+    horizontal: 仅限水平
+    vertical: 仅限垂直
+  target-language: 翻译语言
+  target-language-options:
+    auto: 跟随网页语言
+  script-language: 用户脚本语言
+  script-language-options:
+    auto: 跟随网页语言
+  reset: 重置所有设置
+  detection-resolution-desc: 设置检测图片文本所用的清晰度，小文字适合使用更高的清晰度。
+  text-detector-desc: 设置使用的文本扫描器。
+  translator-desc: 设置翻译图片所用的翻译服务。
+  render-text-orientation-desc: 设置嵌字的文本方向。
+  target-language-desc: 设置图片翻译后的语言。
+  script-language-desc: 设置此用户脚本的语言。
+  translator-options:
+    none: None (删除文字)
+sponsor:
+  text: 制作不易，请考虑赞助我们！

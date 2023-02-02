@@ -23,12 +23,12 @@ hex = "0.4.3"
 dashmap = "5.4.0"
 ring = "0.16.20"
 
-futures = "0.3.25"
-tokio = { version = "1.24.2", features = ["full"] }
+futures = "0.3.26"
+tokio = { version = "1.25.0", features = ["full"] }
 
 http = "0.2.8"
 hyper = { version = "0.14.23", features = ["full"] }
-axum = { version = "0.6.3", features = [
+axum = { version = "0.6.4", features = [
   "macros",
   "ws",
   "headers",

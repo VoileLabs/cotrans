@@ -98,6 +98,12 @@ async fn task_query_v1_ws(
     }
   };
 
+  let msg = rx.borrow().to_owned();
+  let finish = send_watch_msg(&r2, socket, msg).await?;
+  if finish {
+    return Ok(());
+  }
+
   loop {
     tokio::select! {
       msg = socket.recv() => match msg {
@@ -115,32 +121,46 @@ async fn task_query_v1_ws(
       changed = rx.changed() => match changed {
         Ok(_) => {
           let msg = rx.borrow().to_owned();
-          match msg {
-            TaskWatchMessage::Pending(pos) => {
-              _ = send_msg(socket, QueryV1Message::Pending { pos }).await;
-            }
-            TaskWatchMessage::Status(status) => {
-              _ = send_msg(socket, QueryV1Message::Status { status }).await;
-            }
-            TaskWatchMessage::Result(result) => {
-              _ = send_msg(
-                socket,
-                QueryV1Message::Result {
-                  result: TaskResult {
-                    translation_mask: r2.public_url(&result.translation_mask),
-                  },
-                },
-              ).await;
-              return Ok(());
-            }
-            TaskWatchMessage::Error => {
-              _ = send_msg(socket, QueryV1Message::Error { error_id: None }).await;
-              return Ok(());
-            }
+          let finish = send_watch_msg(&r2, socket, msg).await?;
+          if finish {
+            return Ok(());
           }
-        }
+        },
         Err(err) => return Err(AppError::from(err)),
-      }
+      },
+    }
+  }
+}
+
+async fn send_watch_msg(
+  r2: &R2Client,
+  socket: &mut WebSocket,
+  msg: TaskWatchMessage,
+) -> AppResult<bool> {
+  match msg {
+    TaskWatchMessage::Pending(pos) => {
+      send_msg(socket, QueryV1Message::Pending { pos }).await?;
+      return Ok(false);
+    }
+    TaskWatchMessage::Status(status) => {
+      send_msg(socket, QueryV1Message::Status { status }).await?;
+      return Ok(false);
+    }
+    TaskWatchMessage::Result(result) => {
+      send_msg(
+        socket,
+        QueryV1Message::Result {
+          result: TaskResult {
+            translation_mask: r2.public_url(&result.translation_mask),
+          },
+        },
+      )
+      .await?;
+      return Ok(true);
+    }
+    TaskWatchMessage::Error => {
+      send_msg(socket, QueryV1Message::Error { error_id: None }).await?;
+      return Ok(true);
     }
   }
 }
