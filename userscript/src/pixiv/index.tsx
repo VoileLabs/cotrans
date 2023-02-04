@@ -126,7 +126,7 @@ function mount(): TranslatorInstance {
     })
 
     const disposeButton = render(() => {
-      const content = createMemo(() => buttonText() + buttonHint())
+      const content = createMemo(() => buttonText()() + buttonHint())
 
       const [advancedMenuOpen, setAdvancedMenuOpen] = createSignal(false)
 

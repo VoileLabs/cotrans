@@ -1,7 +1,7 @@
 {
   "name": "imgtrans-userscript",
   "type": "module",
-  "version": "0.7.16",
+  "version": "0.8.0-bata.1",
   "private": true,
   "scripts": {
     "build": "rollup -c",
