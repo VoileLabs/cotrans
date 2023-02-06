@@ -37,7 +37,7 @@ pub async fn twitter_tweet_images(
 
       tokio::spawn(async move {
         let image = http_client
-          .get(&format!("https://pbs.twimg.com/media/{}.png", image_id))
+          .get(&format!("https://pbs.twimg.com/media/{image_id}.png"))
           .send()
           .await?;
         let image_bytes = image.bytes().await?;
@@ -109,7 +109,7 @@ pub async fn twitter_tweet(
   http_client: &HttpClient,
 ) -> Result<reqwest::Response, reqwest::Error> {
   http_client
-    .get(&format!("https://twitter.com/_/status/{}", tweet_id))
+    .get(&format!("https://twitter.com/_/status/{tweet_id}"))
     .header(header::USER_AGENT, "bot")
     .send()
     .await

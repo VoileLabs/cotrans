@@ -109,7 +109,7 @@ async fn pixiv_artwork_ajax(
   http_client: &HttpClient,
 ) -> AppResult<ParsedArtworkAjax> {
   let res = http_client
-    .get(&format!("https://www.pixiv.net/ajax/illust/{}", artwork_id))
+    .get(&format!("https://www.pixiv.net/ajax/illust/{artwork_id}"))
     .header(header::USER_AGENT, "bot")
     .send()
     .await?;
@@ -149,8 +149,7 @@ async fn pixiv_artwork_pages_ajax(
 ) -> AppResult<ParsedArtworkPagesAjax> {
   let res = http_client
     .get(&format!(
-      "https://www.pixiv.net/ajax/illust/{}/pages",
-      artwork_id
+      "https://www.pixiv.net/ajax/illust/{artwork_id}/pages"
     ))
     .header(header::USER_AGENT, "bot")
     .send()

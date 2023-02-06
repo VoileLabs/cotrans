@@ -45,12 +45,12 @@ async fn main() -> Result<()> {
   // initialize tracing
   tracing_subscriber::registry()
     .with(tracing_subscriber::EnvFilter::new(
-      std::env::var("RUST_LOG").unwrap_or_else(|_| "cotrans_gateway=debug,tower_http=debug".into()),
+      std::env::var("RUST_LOG").unwrap_or_else(|_| "info,cotrans_gateway=debug,tower_http=debug".into()),
     ))
     .with(tracing_subscriber::fmt::layer())
     .init();
 
-  tracing::debug!("starting cotrans gateway");
+  tracing::info!("starting cotrans gateway");
 
   // prisma client
   let db = Arc::new(prisma::new_client().await?);

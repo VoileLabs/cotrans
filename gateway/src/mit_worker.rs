@@ -91,12 +91,12 @@ impl MITWorkersInner {
       }
 
       if db_task.failed_count >= 3 {
-        tracing::debug!(task_id = %db_task.id, failed_count = db_task.failed_count, "Skipping failed task");
+        tracing::debug!(task_id = %db_task.id, failed_count = db_task.failed_count, "skipping failed task");
         continue;
       }
 
       let id = db_task.id.clone();
-      tracing::debug!(task_id = %id, "Resuming task");
+      tracing::debug!(task_id = %id, "resuming task");
       let Ok(task) = self.db_to_task(db_task, None).await else {
         _ = self.data.db.task().update(
           prisma::task::id::equals(id),
@@ -152,7 +152,7 @@ impl MITWorkersInner {
   }
 
   pub async fn dispatch_task(&self, task: Task) {
-    tracing::debug!(task_id = %task.id(), "Dispatching task");
+    tracing::debug!(task_id = %task.id(), "dispatching task");
     increment_counter!("mit_worker_task_dispatch_count");
     // we lock the queue first to prevent other threads from dispatching the same task
     let mut queue = self.data.queue.lock().await;
@@ -323,7 +323,7 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
     drop(queue);
 
     let task_id = task.id().to_owned();
-    tracing::debug!(task_id = %task_id, "Executing task");
+    tracing::debug!(task_id = %task_id, "executing task");
     let time_start = Instant::now();
 
     match execute_task(
@@ -337,24 +337,24 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
     .await
     {
       Ok(result) => {
-        tracing::debug!(task_id = %task_id, "Task finished");
+        tracing::debug!(task_id = %task_id, "task finished");
+        histogram!(
+          "mit_worker_task_duration_seconds",
+          time_start.elapsed().as_secs_f64()
+        );
 
         task.result = Some(result.clone());
         task.state = prisma::TaskState::Done.into();
 
         data.tasks.remove(&task_id);
         increment_counter!("mit_worker_task_finish_count");
-        histogram!(
-          "mit_worker_task_duration_seconds",
-          time_start.elapsed().as_secs_f64()
-        );
 
         _ = tx.send(TaskWatchMessage::Result(result.clone()));
       }
       Err(err) => {
         task.failed_count += 1;
         tracing::debug!(
-          "Task {} failed in attempt {}: {:?}",
+          "task {} failed in attempt {}: {:?}",
           task.id(),
           task.failed_count,
           err
@@ -441,13 +441,24 @@ where
     match msg {
       web_socket_message::Message::Status(status) => {
         if status.id != *task.id() {
+          tracing::warn!(
+            task_id = %task.id(),
+            status_id = %status.id,
+            status = %status.status,
+            "worker sent a mismatched status"
+          );
           continue;
         }
-        tracing::debug!(task_id = %task.id(), status = %status.status, "Task status");
+        tracing::debug!(task_id = %task.id(), status = %status.status, "task status");
         _ = tx.send(TaskWatchMessage::Status(status.status));
       }
       web_socket_message::Message::FinishTask(finish_task) => {
         if finish_task.id != *task.id() {
+          tracing::warn!(
+            task_id = %task.id(),
+            finish_task_id = %finish_task.id,
+            "worker sent a mismatched finish task"
+          );
           continue;
         }
 

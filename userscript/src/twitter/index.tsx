@@ -74,9 +74,9 @@ function mount(): TranslatorInstance {
       if (!optionsOverwrite && translatedMap[url])
         return translatedMap[url]!
 
-      const status = (t: Accessor<string>) => setTranslateStatusMap(url, () => t)
+      const setStatus = (t: Accessor<string>) => setTranslateStatusMap(url, () => t)
 
-      status(t('common.source.download-image'))
+      setStatus(t('common.source.download-image'))
       if (!originalImageMap[url]) {
         // fetch original image
         const result = await GMP.xmlHttpRequest({
@@ -87,13 +87,13 @@ function mount(): TranslatorInstance {
           overrideMimeType: 'text/plain; charset=x-user-defined',
           onprogress(e) {
             if (e.lengthComputable) {
-              status(t('common.source.download-image-progress', {
+              setStatus(t('common.source.download-image-progress', {
                 progress: formatProgress(e.loaded, e.total),
               }))
             }
           },
         }).catch((e) => {
-          status(t('common.source.download-image-error'))
+          setStatus(t('common.source.download-image-error'))
           throw e
         })
         originalImageMap[url] = result.response as Blob
@@ -101,49 +101,48 @@ function mount(): TranslatorInstance {
       const originalImage = originalImageMap[url]
       const originalSrcSuffix = new URL(url).searchParams.get('format') || url.split('.')[1] || 'jpg'
 
-      status(t('common.client.resize'))
+      setStatus(t('common.client.resize'))
       await new Promise<void>(resolve => queueMicrotask(resolve))
       const { blob: resizedImage, suffix: resizedSuffix } = await resizeToSubmit(originalImage, originalSrcSuffix)
 
-      status(t('common.client.submit'))
+      setStatus(t('common.client.submit'))
       const task = await submitTranslate(
         resizedImage,
         resizedSuffix,
         {
           onProgress(progress) {
-            status(t('common.client.submit-progress', { progress }))
+            setStatus(t('common.client.submit-progress', { progress }))
           },
         },
         optionsOverwrite,
       ).catch((e) => {
-        status(t('common.client.submit-error'))
+        setStatus(t('common.client.submit-error'))
         throw e
       })
 
       let maskUrl = task.result?.translation_mask
       if (!maskUrl) {
-        status(t('common.status.pending'))
-        const res = await pullTranslationStatus(task.id, (s) => {
-          status(s)
-        }).catch((e) => {
-          status(e)
-          throw e
-        })
+        setStatus(t('common.status.pending'))
+        const res = await pullTranslationStatus(task.id, setStatus)
+          .catch((e) => {
+            setStatus(e)
+            throw e
+          })
         maskUrl = res.translation_mask
       }
 
-      status(t('common.client.download-image'))
+      setStatus(t('common.client.download-image'))
       const mask = await downloadBlob(maskUrl, {
         onProgress(progress) {
           t('common.client.download-image-progress', { progress })
         },
       }).catch((e) => {
-        status(t('common.client.download-image-error'))
+        setStatus(t('common.client.download-image-error'))
         throw e
       })
       const maskUri = URL.createObjectURL(mask)
 
-      status(t('common.client.merging'))
+      setStatus(t('common.client.merging'))
       // layer translation_mask on top of original image
       const canvas = document.createElement('canvas')
       const canvasCtx = canvas.getContext('2d')!
@@ -178,7 +177,7 @@ function mount(): TranslatorInstance {
 
       setTranslatedMap(url, translatedUri)
 
-      status(() => '')
+      setStatus(() => '')
 
       return translatedUri
     }
@@ -283,6 +282,8 @@ function mount(): TranslatorInstance {
     const buttonStatusContainer = document.createElement('div')
     container.insertBefore(buttonStatusContainer, container.firstChild)
     const disposeButtonStatus = render(() => {
+      const status = createMemo(() => transStatus())
+
       const borderRadius = createMemo(() => (advancedMenuOpen() || transStatus()) ? '4px' : '16px')
 
       const [advDetectRes, setAdvDetectRes] = createSignal(detectionResolution())
@@ -313,9 +314,9 @@ function mount(): TranslatorInstance {
           'cursor': 'default',
         }}>
           <Switch>
-            <Match when={transStatus()}>
+            <Match when={status()}>
               <div style={{ 'padding-right': '8px' }}>
-                {transStatus()}
+                {status()}
               </div>
             </Match>
             <Match when={currentImg() && !translateEnabledMap[currentImg()!]}>

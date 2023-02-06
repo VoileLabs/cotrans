@@ -140,11 +140,11 @@ async fn send_watch_msg(
   match msg {
     TaskWatchMessage::Pending(pos) => {
       send_msg(socket, QueryV1Message::Pending { pos }).await?;
-      return Ok(false);
+      Ok(false)
     }
     TaskWatchMessage::Status(status) => {
       send_msg(socket, QueryV1Message::Status { status }).await?;
-      return Ok(false);
+      Ok(false)
     }
     TaskWatchMessage::Result(result) => {
       send_msg(
@@ -156,11 +156,11 @@ async fn send_watch_msg(
         },
       )
       .await?;
-      return Ok(true);
+      Ok(true)
     }
     TaskWatchMessage::Error(retry) => {
       send_msg(socket, QueryV1Message::Error { error_id: None }).await?;
-      return Ok(!retry);
+      Ok(!retry)
     }
   }
 }

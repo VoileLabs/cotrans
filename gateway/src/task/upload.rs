@@ -150,6 +150,14 @@ async fn upload_create_v1(
 ) -> AppJsonResult<UploadCreateResponse> {
   let retry = payload.retry.unwrap_or(retry);
 
+  tracing::info!(
+    file_len = %bytefmt::format(payload.file.len() as u64),
+    mime = ?payload.mime,
+    param = ?payload.param,
+    retry = %retry,
+    "received upload request"
+  );
+
   let file = payload.file;
 
   let (image, png, hash, sha) = spawn_blocking(move || {
@@ -164,9 +172,11 @@ async fn upload_create_v1(
       None => ImageReader::new(cursor).with_guessed_format()?.decode()?,
     };
 
-    // scale image to less than 6000x6000
     let width = image.width();
     let height = image.height();
+    tracing::debug!(width, height, "decoded image");
+
+    // scale image to less than 6000x6000
     if width > 6000 || height > 6000 {
       let width = width as f64;
       let height = height as f64;

@@ -180,9 +180,9 @@ impl From<ParsePixivArtworkPagesAjaxError> for AppError {
 impl fmt::Display for AppError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let id = cuid::cuid().unwrap();
-    let text = format!("{:#?}", self);
+    let text = format!("{self:#?}");
     tracing::debug!(id = %id, error = %text, "error");
-    write!(f, "{{\"error_id\": \"{}\"}}", id)
+    write!(f, "{{\"error_id\": \"{id}\"}}")
   }
 }
 

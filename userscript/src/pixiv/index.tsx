@@ -112,10 +112,9 @@ function mount(): TranslatorInstance {
     const [translateMounted, setTranslateMounted] = createSignal(false)
     let buttonDisabled = false
 
-    const [buttonProcessing, setButtonProcessing] = createSignal(false)
-    const [buttonTranslated, setButtonTranslated] = createSignal(false)
-    const [buttonText, setButtonText] = createSignal<Accessor<string | undefined>>(() => undefined)
-    const [buttonHint, setButtonHint] = createSignal('')
+    const [processing, setProcessing] = createSignal(false)
+    const [translated, setTranslated] = createSignal(false)
+    const [transStatus, setTransStatus] = createSignal<Accessor<string | undefined>>(() => undefined)
 
     // create a translate botton
     parent.style.position = 'relative'
@@ -126,7 +125,7 @@ function mount(): TranslatorInstance {
     })
 
     const disposeButton = render(() => {
-      const content = createMemo(() => buttonText()() + buttonHint())
+      const status = createMemo(() => transStatus()())
 
       const [advancedMenuOpen, setAdvancedMenuOpen] = createSignal(false)
 
@@ -158,8 +157,8 @@ function mount(): TranslatorInstance {
               'cursor': 'default',
             }}>
               <Switch>
-                <Match when={content()}>
-                  {content()}
+                <Match when={status()}>
+                  {status()}
                 </Match>
                 <Match when={translateMounted()}>
                   <div style={{
@@ -204,83 +203,110 @@ function mount(): TranslatorInstance {
                           'cursor': 'pointer',
                         }}
                       />
-                      <div style={{
-                        'display': 'flex',
-                        'flex-direction': 'column',
-                        'gap': '4px',
-                      }}>
-                        <For
-                          each={[
-                            [t('settings.detection-resolution'),
-                              advDetectRes, setAdvDetectRes, advDetectResIndex,
-                              detectResOptions, detectResOptionsMap,
-                            ] as const,
-                            [t('settings.text-detector'),
-                              advTextDetector, setAdvTextDetector, advTextDetectorIndex,
-                              textDetectorOptions, textDetectorOptionsMap,
-                            ] as const,
-                            [t('settings.translator'),
-                              advTranslator, setAdvTranslator, advTranslatorIndex,
-                              translatorOptions, translatorOptionsMap,
-                            ] as const,
-                            [
-                              t('settings.render-text-orientation'),
-                              advRenderTextDir, setAdvRenderTextDir, advRenderTextDirIndex,
-                              renderTextDirOptions, renderTextDirOptionsMap,
-                            ] as const,
-                          ]}
-                        >{([title, opt, setOpt, optIndex, opts, optMap]) => (
-                          <div>
-                            <div style={{ 'font-size': '12px' }}>{title()}</div>
-                            <div style={{
-                              'display': 'flex',
-                              'flex-direction': 'row',
-                              'justify-content': 'space-between',
-                              'align-items': 'center',
-                              'user-select': 'none',
-                            }}>
-                              <Show
-                                when={optIndex() > 0}
-                                fallback={<div style={{ width: '1.2em' }} />}
-                              >
-                                <IconCarbonChevronLeft
-                                  style={{
-                                    width: '1.2em',
-                                    cursor: 'pointer',
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    e.preventDefault()
+                    </div>
+                    <div style={{
+                      'display': 'flex',
+                      'flex-direction': 'column',
+                      'gap': '4px',
+                    }}>
+                      <For
+                        each={[
+                          [t('settings.detection-resolution'),
+                            advDetectRes, setAdvDetectRes, advDetectResIndex,
+                            detectResOptions, detectResOptionsMap,
+                          ] as const,
+                          [t('settings.text-detector'),
+                            advTextDetector, setAdvTextDetector, advTextDetectorIndex,
+                            textDetectorOptions, textDetectorOptionsMap,
+                          ] as const,
+                          [t('settings.translator'),
+                            advTranslator, setAdvTranslator, advTranslatorIndex,
+                            translatorOptions, translatorOptionsMap,
+                          ] as const,
+                          [
+                            t('settings.render-text-orientation'),
+                            advRenderTextDir, setAdvRenderTextDir, advRenderTextDirIndex,
+                            renderTextDirOptions, renderTextDirOptionsMap,
+                          ] as const,
+                        ]}
+                      >{([title, opt, setOpt, optIndex, opts, optMap]) => (
+                        <div>
+                          <div style={{ 'font-size': '12px' }}>{title()}</div>
+                          <div style={{
+                            'display': 'flex',
+                            'flex-direction': 'row',
+                            'justify-content': 'space-between',
+                            'align-items': 'center',
+                            'user-select': 'none',
+                          }}>
+                            <Show
+                              when={optIndex() > 0}
+                              fallback={<div style={{ width: '1.2em' }} />}
+                            >
+                              <IconCarbonChevronLeft
+                                style={{
+                                  width: '1.2em',
+                                  cursor: 'pointer',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
 
-                                    if (optIndex() <= 0)
-                                      return
-                                    setOpt(opts[optIndex() - 1])
-                                  }}
-                                />
-                              </Show>
-                              <div>{optMap[opt()]()}</div>
-                              <Show
-                                when={optIndex() < opts.length - 1}
-                                fallback={<div style={{ width: '1.2em' }} />}
-                              >
-                                <IconCarbonChevronRight
-                                  style={{
-                                    width: '1.2em',
-                                    cursor: 'pointer',
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    e.preventDefault()
+                                  if (optIndex() <= 0)
+                                    return
+                                  setOpt(opts[optIndex() - 1])
+                                }}
+                              />
+                            </Show>
+                            <div>{optMap[opt()]()}</div>
+                            <Show
+                              when={optIndex() < opts.length - 1}
+                              fallback={<div style={{ width: '1.2em' }} />}
+                            >
+                              <IconCarbonChevronRight
+                                style={{
+                                  width: '1.2em',
+                                  cursor: 'pointer',
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  e.preventDefault()
 
-                                    if (optIndex() >= opts.length - 1)
-                                      return
-                                    setOpt(opts[optIndex() + 1])
-                                  }}
-                                />
-                              </Show>
-                            </div>
+                                  if (optIndex() >= opts.length - 1)
+                                    return
+                                  setOpt(opts[optIndex() + 1])
+                                }}
+                              />
+                            </Show>
                           </div>
-                        )}</For>
+                        </div>
+                      )}</For>
+                      <div
+                        style={{
+                          'padding': '2px 0px 1px 0px',
+                          'border': '1px solid #A1A1AA',
+                          'border-radius': '2px',
+                          'text-align': 'center',
+                          'cursor': 'pointer',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          e.preventDefault()
+
+                          if (buttonDisabled)
+                            return
+                          if (translateMounted())
+                            return
+                          enable({
+                            detectionResolution: advDetectRes(),
+                            renderTextOrientation: advRenderTextDir(),
+                            textDetector: advTextDetector(),
+                            translator: advTranslator(),
+                          })
+                          setAdvancedMenuOpen(false)
+                        }}
+                      >
+                        {t('common.control.translate')()}
                       </div>
                     </div>
                   </Show>
@@ -295,7 +321,7 @@ function mount(): TranslatorInstance {
               }}>
                 {/* button */}
                 <Dynamic
-                  component={buttonTranslated() ? IconCarbonReset : IconCarbonTranslate}
+                  component={translated() ? IconCarbonReset : IconCarbonTranslate}
                   style={{
                     'font-size': '18px',
                     'line-height': '18px',
@@ -331,7 +357,7 @@ function mount(): TranslatorInstance {
                     'right': '0',
                     'bottom': '0',
                     'border': '2px solid #D1D5DB',
-                    ...(buttonProcessing()
+                    ...(processing()
                       ? {
                           'border-top': '2px solid #7DD3FC',
                           'animation': 'imgtrans-spin 1s linear infinite',
@@ -355,13 +381,12 @@ function mount(): TranslatorInstance {
       if (!optionsOverwrite && translatedImage)
         return translatedImage
       buttonDisabled = true
-      const text = buttonText()
-      setButtonHint('')
-      setButtonProcessing(true)
+      const text = transStatus()
+      setProcessing(true)
 
-      const status = (t: Accessor<string | undefined>) => setButtonText(() => t)
+      const setStatus = (t: Accessor<string | undefined>) => setTransStatus(() => t)
 
-      status(t('common.source.download-image'))
+      setStatus(t('common.source.download-image'))
       if (!originalImage) {
         // fetch original image
         const result = await GMP.xmlHttpRequest({
@@ -372,61 +397,60 @@ function mount(): TranslatorInstance {
           overrideMimeType: 'text/plain; charset=x-user-defined',
           onprogress(e) {
             if (e.lengthComputable) {
-              status(t('common.source.download-image-progress', {
+              setStatus(t('common.source.download-image-progress', {
                 progress: formatProgress(e.loaded, e.total),
               }))
             }
           },
         }).catch((e) => {
-          status(t('common.source.download-image-error'))
+          setStatus(t('common.source.download-image-error'))
           throw e
         })
         originalImage = result.response as Blob
       }
 
-      status(t('common.client.resize'))
+      setStatus(t('common.client.resize'))
       await new Promise<void>(resolve => queueMicrotask(resolve))
       const { blob: resizedImage, suffix: resizedSuffix } = await resizeToSubmit(originalImage, originalSrcSuffix)
 
-      status(t('common.client.submit'))
+      setStatus(t('common.client.submit'))
       const task = await submitTranslate(
         resizedImage,
         resizedSuffix,
         {
           onProgress(progress) {
-            status(t('common.client.submit-progress', { progress }))
+            setStatus(t('common.client.submit-progress', { progress }))
           },
         },
         optionsOverwrite,
       ).catch((e) => {
-        status(t('common.client.submit-error'))
+        setStatus(t('common.client.submit-error'))
         throw e
       })
 
       let maskUrl = task.result?.translation_mask
       if (!maskUrl) {
-        status(t('common.status.pending'))
-        const res = await pullTranslationStatus(task.id, (s) => {
-          status(s)
-        }).catch((e) => {
-          status(e)
-          throw e
-        })
+        setStatus(t('common.status.pending'))
+        const res = await pullTranslationStatus(task.id, setStatus)
+          .catch((e) => {
+            setStatus(e)
+            throw e
+          })
         maskUrl = res.translation_mask
       }
 
-      status(t('common.client.download-image'))
+      setStatus(t('common.client.download-image'))
       const mask = await downloadBlob(maskUrl, {
         onProgress(progress) {
-          status(t('common.client.download-image-progress', { progress }))
+          setStatus(t('common.client.download-image-progress', { progress }))
         },
       }).catch((e) => {
-        status(t('common.client.download-image-error'))
+        setStatus(t('common.client.download-image-error'))
         throw e
       })
       const maskUri = URL.createObjectURL(mask)
 
-      status(t('common.client.merging'))
+      setStatus(t('common.client.merging'))
       // layer translation_mask on top of original image
       const canvas = document.createElement('canvas')
       const canvasCtx = canvas.getContext('2d')!
@@ -462,8 +486,8 @@ function mount(): TranslatorInstance {
       translatedImage = translatedUri
       translatedMap.set(originalSrc, translatedUri)
 
-      status(text)
-      setButtonProcessing(false)
+      setStatus(text)
+      setProcessing(false)
       buttonDisabled = false
       return translatedUri
     }
@@ -476,7 +500,7 @@ function mount(): TranslatorInstance {
         imageNode.removeAttribute('srcset')
 
         setTranslateMounted(true)
-        setButtonTranslated(true)
+        setTranslated(true)
       }
       catch (e) {
         buttonDisabled = false
@@ -490,7 +514,7 @@ function mount(): TranslatorInstance {
         imageNode.setAttribute('srcset', srcset)
       imageNode.removeAttribute('data-trans')
       setTranslateMounted(false)
-      setButtonTranslated(false)
+      setTranslated(false)
     }
 
     // called on click

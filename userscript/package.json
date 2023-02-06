@@ -13,7 +13,7 @@
   "dependencies": {
     "@solid-primitives/mutation-observer": "^1.1.6",
     "@solid-primitives/scheduled": "^1.2.1",
-    "@solid-primitives/utils": "^5.0.0",
+    "@solid-primitives/utils": "^5.1.0",
     "solid-js": "^1.6.10"
   },
   "devDependencies": {
@@ -23,17 +23,17 @@
     "@rollup/plugin-commonjs": "^24.0.1",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-yaml": "^4.0.1",
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.11.19",
     "@types/tampermonkey": "^4.0.10",
     "babel-preset-solid": "^1.6.10",
     "esbuild": "^0.17.5",
     "fast-glob": "^3.2.12",
-    "happy-dom": "^8.2.2",
+    "happy-dom": "^8.2.6",
     "magic-string": "^0.27.0",
     "rimraf": "^4.1.2",
-    "rollup": "^3.12.1",
+    "rollup": "^3.14.0",
     "rollup-plugin-esbuild": "^5.0.0",
     "unplugin-icons": "^0.15.2",
-    "vitest": "^0.28.3"
+    "vitest": "^0.28.4"
   }
 }

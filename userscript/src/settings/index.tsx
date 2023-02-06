@@ -162,7 +162,7 @@ export const Settings: Component<{
               }
             : {}}
         >
-          <div style={textStyle}>{title}</div>
+          <div style={textStyle}>{title()}</div>
           <div>
             <select
               value={opt()}
@@ -172,7 +172,7 @@ export const Settings: Component<{
                 <option value={value}>{label()}</option>
               ))}
             </select>
-            <Show when={desc}>
+            <Show when={desc()}>
               <div style={{ 'font-size': '13px' }}>{desc()}</div>
             </Show>
           </div>
