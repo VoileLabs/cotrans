@@ -456,7 +456,7 @@ function mount(): TranslatorInstance {
       const canvasCtx = canvas.getContext('2d')!
       // draw original image
       const img = new Image()
-      img.src = URL.createObjectURL(originalImage)
+      img.src = URL.createObjectURL(resizedImage)
       await new Promise((resolve) => {
         img.onload = () => {
           canvas.width = img.width
