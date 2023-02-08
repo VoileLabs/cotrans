@@ -373,9 +373,7 @@ function mount(): TranslatorInstance {
         </div>
       )
     }, container)
-    onCleanup(() => {
-      disposeButton()
-    })
+    onCleanup(disposeButton)
 
     async function getTranslatedImage(optionsOverwrite?: TranslateOptionsOverwrite): Promise<string> {
       if (!optionsOverwrite && translatedImage)
@@ -550,7 +548,7 @@ function mount(): TranslatorInstance {
         translateEnabledMap.delete(originalSrc)
         return disable()
       },
-      isEnabled: translateMounted,
+      isEnabled: createMemo(() => processing() || translateMounted()),
     }
   }
 
@@ -633,16 +631,18 @@ function mount(): TranslatorInstance {
       const container = document.createElement('div')
       section.appendChild(container)
       const dispose = render(() => <TranslateAll />, container)
-
-      disposeTransAll = () => {
+      onCleanup(disposeTransAll = () => {
         dispose()
         section.removeChild(container)
+      })
+    }
+    else {
+      if (disposeTransAll) {
+        disposeTransAll()
+        disposeTransAll = undefined
       }
     }
   }
-  onCleanup(() => {
-    disposeTransAll?.()
-  })
 
   let disposeMangaViewerTransAll: (() => void) | undefined
   function refreshManagaViewerTransAll() {
@@ -655,10 +655,10 @@ function mount(): TranslatorInstance {
       mangaViewer.prepend(container)
       const dispose = render(() => <TranslateAll />, container)
 
-      disposeMangaViewerTransAll = () => {
+      onCleanup(disposeMangaViewerTransAll = () => {
         dispose()
         mangaViewer.removeChild(container)
-      }
+      })
     }
     else {
       if (disposeMangaViewerTransAll) {
@@ -667,9 +667,6 @@ function mount(): TranslatorInstance {
       }
     }
   }
-  onCleanup(() => {
-    disposeMangaViewerTransAll?.()
-  })
 
   createMutationObserver(
     document.body,
