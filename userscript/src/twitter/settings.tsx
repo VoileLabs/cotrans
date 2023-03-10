@@ -72,7 +72,7 @@ function mount(): SettingsInjectorInstance {
     const settingsContainer = document.createElement('div')
     settingsContainer.setAttribute(`data-imgtrans-settings-${EDITION}-section`, 'true')
     section.appendChild(settingsContainer)
-    disposeSettings = render(() => {
+    const disposeSettingsApp = render(() => {
       onCleanup(() => {
         errorPage.style.display = ''
       })
@@ -98,13 +98,24 @@ function mount(): SettingsInjectorInstance {
         </div>
       )
     }, settingsContainer)
+    disposeSettings = () => {
+      disposeSettingsApp()
+      settingsContainer.remove()
+    }
+    onCleanup(disposeSettings)
   }
 
   createMutationObserver(
     document.body,
     { childList: true, subtree: true },
     throttle(() => {
+      // since this throttled fn can be called after page navigation,
+      // we need to check if the page is still the settings page.
+      if (!location.pathname.startsWith('/settings'))
+        return
+
       checkTab()
+
       if (location.pathname.match(`/settings/__imgtrans_${EDITION}`)) {
         if (settingsTab && settingsTab.children.length < 2) {
           settingsTab.style.backgroundColor = '#F7F9F9'
@@ -136,7 +147,7 @@ function mount(): SettingsInjectorInstance {
 
   return {
     canKeep(url) {
-      return url.includes('twitter.com') && url.includes('settings/')
+      return url.includes('twitter.com') && url.includes('/settings')
     },
   }
 }
@@ -144,7 +155,8 @@ function mount(): SettingsInjectorInstance {
 const settingsInjector: SettingsInjector = {
   match(url) {
     // https://twitter.com/settings/<tab>
-    return url.hostname.endsWith('twitter.com') && url.pathname.match(/\/settings\//)
+    return url.hostname.endsWith('twitter.com')
+      && (url.pathname === '/settings' || url.pathname.match(/^\/settings\//))
   },
   mount,
 }

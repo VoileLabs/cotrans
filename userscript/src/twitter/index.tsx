@@ -9,7 +9,7 @@ import { t } from '../i18n'
 import type { TranslateOptionsOverwrite } from '../utils/core'
 import {
   downloadBlob,
-  pullTranslationStatus,
+  pullTranslationStatusPolling,
   resizeToSubmit,
   submitTranslate,
 } from '../utils/core'
@@ -123,7 +123,7 @@ function mount(): TranslatorInstance {
       let maskUrl = task.result?.translation_mask
       if (!maskUrl) {
         setStatus(t('common.status.pending'))
-        const res = await pullTranslationStatus(task.id, setStatus)
+        const res = await pullTranslationStatusPolling(task.id, setStatus)
           .catch((e) => {
             setStatus(e)
             throw e

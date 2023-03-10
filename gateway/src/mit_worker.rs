@@ -173,6 +173,10 @@ impl MITWorkersInner {
     Ok(())
   }
 
+  pub async fn status(&self, id: &str) -> Option<TaskWatchMessage> {
+    self.data.tasks.get(id).map(|rx| rx.borrow().to_owned())
+  }
+
   pub async fn subscribe(&self, id: &str) -> Option<watch::Receiver<TaskWatchMessage>> {
     self.data.tasks.get(id).map(|rx| rx.value().clone())
   }

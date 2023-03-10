@@ -15,22 +15,23 @@ common:
   status:
     default: 未知状态
     pending: 正在等待
-    pending_pos: 正在等待，列队还有 {pos} 张图片
+    pending-pos: 正在等待，列队还有 {pos} 张图片
     upscaling: 正在放大图片
     detection: 正在检测文本
     ocr: 正在识别文本
-    mask_generation: 正在生成文本掩码
+    mask-generation: 正在生成文本掩码
     inpainting: 正在修补图片
     translating: 正在翻译文本
-    render: 正在渲染
+    rendering: 正在渲染
     error: 翻译出错
-    error-lang: 不支持的语言
+    error-lang: 你选择的翻译服务不支持你选择的语言
+    error-translating: 翻译服务没有返回任何文本
   control:
     translate: 翻译
     batch: 翻译全部
     reset: 还原
   batch:
-    progress: 翻译中({count}/{total})
+    progress: 翻译中 ({count}/{total})
     finish: 翻译完成
     error: 翻译完成(有失败)
 settings:

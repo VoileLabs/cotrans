@@ -15,16 +15,17 @@ common:
   status:
     default: Unknown status
     pending: Pending
-    pending_pos: Pending, {pos} in queue
+    pending-pos: Pending, {pos} in queue
     upscaling: Upscaling
     detection: Detecting text
     ocr: Scanning text
-    mask_generation: Generating mask
+    mask-generation: Generating mask
     inpainting: Inpainting
     translating: Translating
-    render: Rendering
+    rendering: Rendering
     error: Error during translation
-    error-lang: Unsupported language
+    error-lang: Your target language is not supported by the chosen translator
+    error-translating: Did not get any text back from the text translation service
   control:
     translate: Translate
     batch: Translate all

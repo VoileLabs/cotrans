@@ -111,7 +111,7 @@ export async function submitTranslate(
 
 export function getStatusText(msg: QueryV1Message): Accessor<string> {
   if (msg.type === 'pending')
-    return t('common.status.pending_pos', { pos: msg.pos })
+    return t('common.status.pending-pos', { pos: msg.pos })
   if (msg.type === 'status')
     return t(`common.status.${msg.status}`)
   return t('common.status.default')
@@ -149,6 +149,24 @@ export function pullTranslationStatus(id: string, cb: (status: Accessor<string>)
         cb(getStatusText(msg))
     }
   })
+}
+
+export async function pullTranslationStatusPolling(id: string, cb: (status: Accessor<string>) => void) {
+  while (true) {
+    const res = await GMP.xmlHttpRequest({
+      method: 'GET',
+      url: `https://api.cotrans.touhou.ai/task/${id}/status/v1`,
+    })
+    const msg = JSON.parse(res.responseText) as QueryV1Message
+    if (msg.type === 'result')
+      return msg.result
+    else if (msg.type === 'error')
+      throw t('common.status.error-with-id', { id: msg.error_id })
+    else
+      cb(getStatusText(msg))
+
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
 }
 
 export async function downloadBlob(
