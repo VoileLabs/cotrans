@@ -6,7 +6,7 @@ use axum::{
   routing::put,
   Json, Router,
 };
-use image::{imageops::FilterType, io::Reader as ImageReader, ImageFormat, ImageOutputFormat};
+use image::{io::Reader as ImageReader, ImageFormat, ImageOutputFormat};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
@@ -162,7 +162,7 @@ async fn upload_create_v1(
 
   let (image, png, hash, sha) = spawn_blocking(move || {
     let cursor = Cursor::new(file.clone());
-    let mut image = match payload.mime {
+    let image = match payload.mime {
       Some(mime) => ImageReader::with_format(
         cursor,
         ImageFormat::from_mime_type(mime)
@@ -177,15 +177,19 @@ async fn upload_create_v1(
     tracing::debug!(width, height, "decoded image");
 
     // scale image to less than 6000x6000
+    // if width > 6000 || height > 6000 {
+    //   let width = width as f64;
+    //   let height = height as f64;
+    //   let (width, height) = if width > height {
+    //     (6000, (6000. / width * height) as u32)
+    //   } else {
+    //     ((6000. / height * width) as u32, 6000)
+    //   };
+    //   image = image.resize_exact(width, height, FilterType::Lanczos3);
+    // }
+
     if width > 6000 || height > 6000 {
-      let width = width as f64;
-      let height = height as f64;
-      let (width, height) = if width > height {
-        (6000, (6000. / width * height) as u32)
-      } else {
-        ((6000. / height * width) as u32, 6000)
-      };
-      image = image.resize_exact(width, height, FilterType::Lanczos3);
+      return Err(AppError::BadRequest("image too large".to_string()));
     }
 
     let hash = images::hash(&image);
