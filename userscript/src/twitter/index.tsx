@@ -13,8 +13,8 @@ import {
   resizeToSubmit,
   submitTranslate,
 } from '../utils/core'
-import { formatProgress } from '../utils'
-import { detectionResolution, renderTextOrientation, textDetector, translatorService } from '../composables/storage'
+import { assert, formatProgress } from '../utils'
+import { detectionResolution, renderTextOrientation, textDetector, translatorService } from '../utils/storage'
 import { detectResOptions, detectResOptionsMap, renderTextDirOptions, renderTextDirOptionsMap, textDetectorOptions, textDetectorOptionsMap, translatorOptions, translatorOptionsMap } from '../settings'
 import IconCarbonTranslate from '~icons/carbon/translate'
 import IconCarbonReset from '~icons/carbon/reset'
@@ -39,15 +39,38 @@ function mount(): TranslatorInstance {
   const createDialog = (): DialogInstance => {
     const [active, setActive] = createSignal(0)
     const buttonParent = dialog!.querySelector('[aria-labelledby="modal-header"][role="dialog"]')!
-      .firstChild!.firstChild as HTMLElement
+      .firstElementChild!.firstElementChild!
 
-    const images = createMemo(() => [].slice.call((buttonParent.firstChild! as HTMLElement).querySelectorAll('img')) as HTMLImageElement[])
+    const getImages = () => {
+      try {
+        const cont = buttonParent.firstElementChild!
+        assert(cont.nodeName === 'DIV')
+        const ul = cont.firstElementChild!.firstElementChild!.nextElementSibling!.firstElementChild!.firstElementChild!
+        assert(ul.nodeName === 'UL')
+        const images = []
+        let li = ul.firstElementChild!
+        do {
+          const img = li.firstElementChild!.firstElementChild!.firstElementChild!.firstElementChild!.lastElementChild!
+          assert(img.nodeName === 'IMG')
+          images.push(img as HTMLImageElement)
+        // eslint-disable-next-line no-cond-assign
+        } while (li = li.nextElementSibling!)
+        return images
+      }
+      catch (e) {
+        return [].slice.call((buttonParent.firstElementChild!).querySelectorAll('img')) as HTMLImageElement[]
+      }
+    }
+    const [images, setImages] = createSignal(getImages(), {
+      equals: (a, b) => a.length === b.length && a.every((img, i) => img === b[i]),
+    })
     const currentImg = createMemo(() => {
       const img = images()[active()]
       if (!img)
         return undefined
       return img.getAttribute('data-transurl') || img.src
     })
+
     createEffect(() => {
       for (const img of images()) {
         const div = img.previousSibling as HTMLElement
@@ -491,6 +514,7 @@ function mount(): TranslatorInstance {
       update() {
         if (referenceChild.style.backgroundColor)
           setBackgroundColor(child.style.backgroundColor = referenceChild.style.backgroundColor)
+        setImages(getImages())
       },
     }
   }

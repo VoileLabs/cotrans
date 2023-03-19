@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
-    "types": ["tampermonkey", "vitest/globals", "unplugin-icons/types/solid"],
+    "types": ["tampermonkey", "vitest", "unplugin-icons/types/solid"],
     "moduleResolution": "Node",
     "jsx": "preserve",
     "jsxImportSource": "solid-js",

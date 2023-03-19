@@ -1,12 +1,12 @@
 import type { Accessor } from 'solid-js'
+import { BCP47ToISO639, realLang, t } from '../i18n'
 import {
   detectionResolution,
   renderTextOrientation,
   targetLang,
   textDetector,
   translatorService,
-} from '../composables/storage'
-import { BCP47ToISO639, realLang, t } from '../i18n'
+} from './storage'
 import { formatProgress, formatSize } from '.'
 
 export async function resizeToSubmit(blob: Blob, suffix: string): Promise<{ blob: Blob; suffix: string }> {

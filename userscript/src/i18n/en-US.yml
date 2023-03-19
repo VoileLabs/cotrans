@@ -23,6 +23,8 @@ common:
     inpainting: Inpainting
     translating: Translating
     rendering: Rendering
+    downscaling: Downscaling
+    finished: Finishing
     error: Error during translation
     error-lang: Your target language is not supported by the chosen translator
     error-translating: Did not get any text back from the text translation service

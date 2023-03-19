@@ -114,6 +114,10 @@ function mount(): SettingsInjectorInstance {
       if (!location.pathname.startsWith('/settings'))
         return
 
+      // workaround for profile editing popup
+      if (location.pathname === '/settings/profile')
+        return
+
       checkTab()
 
       if (location.pathname.match(`/settings/__imgtrans_${EDITION}`)) {
@@ -157,6 +161,7 @@ const settingsInjector: SettingsInjector = {
     // https://twitter.com/settings/<tab>
     return url.hostname.endsWith('twitter.com')
       && (url.pathname === '/settings' || url.pathname.match(/^\/settings\//))
+      && url.pathname !== '/settings/profile'
   },
   mount,
 }

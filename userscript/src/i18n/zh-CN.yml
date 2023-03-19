@@ -23,6 +23,8 @@ common:
     inpainting: 正在修补图片
     translating: 正在翻译文本
     rendering: 正在渲染
+    downscaling: 正在缩小图片
+    finished: 正在整理结果
     error: 翻译出错
     error-lang: 你选择的翻译服务不支持你选择的语言
     error-translating: 翻译服务没有返回任何文本

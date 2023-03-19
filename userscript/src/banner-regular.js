@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name              Cotrans Manga Translator (Regular Edition)
-// @name:zh-CN        Cotrans 图片翻译器 (常规版)
+// @name              Cotrans Manga/Image Translator (Regular Edition)
+// @name:zh-CN        Cotrans 漫画/图片翻译器 (常规版)
 // @namespace         https://cotrans.touhou.ai/userscript/#regular
 // @version           {{version}}
 // @description       (WIP) Translate texts in images on Pixiv, Twitter
@@ -34,7 +34,7 @@
 // @grant GM.removeValueChangeListener
 // @grant GM_removeValueChangeListener
 // @grant window.onurlchange
-// @run-at document-end
+// @run-at document-idle
 // ==/UserScript==
 
 /* eslint-disable no-undef, unused-imports/no-unused-vars */

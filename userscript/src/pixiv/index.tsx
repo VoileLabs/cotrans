@@ -18,7 +18,7 @@ import {
   renderTextOrientation,
   textDetector,
   translatorService,
-} from '../composables/storage'
+} from '../utils/storage'
 import {
   detectResOptions,
   detectResOptionsMap,

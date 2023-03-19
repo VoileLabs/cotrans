@@ -3,7 +3,7 @@ import { DelegatedEvents } from 'solid-js/web'
 import { throttle } from '@solid-primitives/scheduled'
 import { checkCSS } from './style'
 import { changeLangEl } from './i18n'
-import { storageReady } from './composables/storage'
+import { storageReady } from './utils/storage'
 
 // https://github.com/solidjs/solid/issues/334#issuecomment-773807937
 DelegatedEvents.clear()
@@ -47,7 +47,9 @@ let settingsInjector: ScopedInstance<SettingsInjectorInstance> | undefined
 export async function start(translators: Translator[], settingsInjectors: SettingsInjector[]) {
   await storageReady
 
-  function onUpdate() {
+  async function onUpdate() {
+    await new Promise<void>(resolve => (queueMicrotask ?? setTimeout)(resolve))
+
     if (currentURL !== location.href) {
       currentURL = location.href
 

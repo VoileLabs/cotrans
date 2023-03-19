@@ -2,7 +2,7 @@ import type { MaybeAccessor } from '@solid-primitives/utils'
 import { access } from '@solid-primitives/utils'
 import type { Accessor } from 'solid-js'
 import { createMemo, createSignal } from 'solid-js'
-import { scriptLang } from '../composables/storage'
+import { scriptLang } from '../utils/storage'
 
 import zhCN from './zh-CN.yml'
 import enUS from './en-US.yml'

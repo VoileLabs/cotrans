@@ -19,3 +19,8 @@ export function formatSize(bytes: number) {
 export function formatProgress(loaded: number, total: number) {
   return `${formatSize(loaded)}/${formatSize(total)}`
 }
+
+export function assert(condition: unknown, message?: string): asserts condition {
+  if (!condition)
+    throw new Error(message)
+}

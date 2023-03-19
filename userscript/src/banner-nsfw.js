@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name              Cotrans Manga Translator (NSFW Edition)
-// @name:zh-CN        Cotrans 图片翻译器 (NSFW 版)
+// @name              Cotrans Manga/Image Translator (NSFW Edition)
+// @name:zh-CN        Cotrans 漫画/图片翻译器 (NSFW 版)
 // @namespace         https://cotrans.touhou.ai/userscript/#nsfw
 // @version           {{version}}
 // @description       (WIP) Translate texts in images on E-Hentai(ExHentai)
@@ -34,7 +34,7 @@
 // @grant GM.removeValueChangeListener
 // @grant GM_removeValueChangeListener
 // @grant window.onurlchange
-// @run-at document-end
+// @run-at document-idle
 // ==/UserScript==
 
 /* eslint-disable no-undef, unused-imports/no-unused-vars */

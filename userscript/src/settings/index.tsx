@@ -13,7 +13,7 @@ import {
   targetLang,
   textDetector,
   translatorService,
-} from '../composables/storage'
+} from '../utils/storage'
 import { t } from '../i18n'
 
 type OptionsMap = Record<string, Accessor<string>>
