@@ -1,6 +1,6 @@
 use axum::{extract::State, routing::get, Json, Router};
 use metrics_exporter_prometheus::PrometheusHandle;
-use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 use crate::{mit_worker, task, AppState, MITWorkers};
 
@@ -17,13 +17,11 @@ async fn root() -> String {
   format!("Cotrans API by VoileLabs {}", env!("CARGO_PKG_VERSION"))
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-struct StatusV1Response {
-  version: String,
-}
-
-async fn status_v1(State(mit_worker): State<MITWorkers>) -> Json<StatusV1Response> {
-  Json(StatusV1Response {
-    version: env!("CARGO_PKG_VERSION").to_string(),
-  })
+async fn status_v1(State(mit_worker): State<MITWorkers>) -> Json<serde_json::Value> {
+  Json(json!({
+    "version": env!("CARGO_PKG_VERSION"),
+    "mit_worker": {
+      "queue": mit_worker.data().queue_len(),
+    }
+  }))
 }

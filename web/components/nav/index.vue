@@ -13,7 +13,7 @@
         Translator
       </NuxtLink>
 
-      <NuxtLink class="nav-link" to="/userscript">
+      <NuxtLink class="nav-link" target="_blank" to="https://greasyfork.org/scripts/437569">
         UserScript
       </NuxtLink>
 

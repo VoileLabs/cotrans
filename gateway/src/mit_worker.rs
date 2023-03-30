@@ -1,6 +1,9 @@
 use std::{
   collections::VecDeque,
-  sync::Arc,
+  sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+  },
   time::{Duration, Instant},
 };
 
@@ -10,7 +13,6 @@ use axum::{
     ws::{self, WebSocket},
     State, WebSocketUpgrade,
   },
-  headers::{self, Header},
   response::IntoResponse,
   routing::get,
   Router, TypedHeader,
@@ -26,6 +28,7 @@ use tokio::sync::{watch, Mutex, Notify};
 
 use crate::{
   error::{AppError, AppResult},
+  headers::x_secret::HeaderXSecret,
   prisma,
   r2::translation_mask_key,
   task::{Task, TaskParam, TaskResult},
@@ -45,12 +48,34 @@ pub struct MITWorkersInner {
   data: Arc<MITWorkerData>,
 }
 
-struct MITWorkerData {
+pub struct MITWorkerData {
   queue: Mutex<VecDeque<(Task, watch::Sender<TaskWatchMessage>)>>,
+  queue_len: AtomicUsize,
   tasks: DashMap<String, watch::Receiver<TaskWatchMessage>>,
   notify: Notify,
   db: Database,
   r2: R2Client,
+}
+
+impl MITWorkerData {
+  pub fn queue_len_inc(&self) {
+    self.queue_len.fetch_add(1, Ordering::Release);
+    increment_gauge!("mit_worker_queue_length", 1.);
+  }
+
+  pub fn queue_len_dec(&self) {
+    self.queue_len.fetch_sub(1, Ordering::Release);
+    decrement_gauge!("mit_worker_queue_length", 1.);
+  }
+
+  pub fn queue_len_set(&self, len: usize) {
+    self.queue_len.store(len, Ordering::Release);
+    gauge!("mit_worker_queue_length", len as f64);
+  }
+
+  pub fn queue_len(&self) -> usize {
+    self.queue_len.load(Ordering::Acquire)
+  }
 }
 
 impl MITWorkersInner {
@@ -59,12 +84,17 @@ impl MITWorkersInner {
       secret,
       data: Arc::new(MITWorkerData {
         queue: Mutex::new(VecDeque::new()),
+        queue_len: AtomicUsize::new(0),
         tasks: DashMap::new(),
         notify: Notify::new(),
         db,
         r2,
       }),
     }
+  }
+
+  pub fn data(&self) -> Arc<MITWorkerData> {
+    self.data.clone()
   }
 }
 
@@ -112,7 +142,7 @@ impl MITWorkersInner {
     }
 
     counter!("mit_worker_task_dispatch_count", queue.len() as u64);
-    gauge!("mit_worker_queue_length", queue.len() as f64);
+    self.data.queue_len_set(queue.len());
 
     self.data.notify.notify_waiters();
 
@@ -159,7 +189,7 @@ impl MITWorkersInner {
     let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
     self.data.tasks.insert(task.id().to_owned(), rx);
     queue.push_back((task, tx));
-    increment_gauge!("mit_worker_queue_length", 1.);
+    self.data.queue_len_inc();
     self.data.notify.notify_one();
   }
 
@@ -212,49 +242,11 @@ impl MITWorkersInner {
     let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
     self.data.tasks.insert(id, rx.clone());
     queue.push_back((task, tx));
-    increment_gauge!("mit_worker_queue_length", 1.);
+    self.data.queue_len_inc();
 
     self.data.notify.notify_one();
 
     Ok(rx)
-  }
-}
-
-static HEADER_NAME_X_SECRET: headers::HeaderName = headers::HeaderName::from_static("x-secret");
-
-#[derive(Debug, Clone)]
-struct HeaderXSecret(String);
-
-impl Header for HeaderXSecret {
-  fn name() -> &'static headers::HeaderName {
-    &HEADER_NAME_X_SECRET
-  }
-
-  fn decode<'i, I>(values: &mut I) -> Result<Self, headers::Error>
-  where
-    Self: Sized,
-    I: Iterator<Item = &'i http::HeaderValue>,
-  {
-    values
-      .next()
-      .map(|value| HeaderXSecret(value.to_str().unwrap().to_string()))
-      .ok_or_else(headers::Error::invalid)
-  }
-
-  fn encode<E: Extend<http::HeaderValue>>(&self, values: &mut E) {
-    values.extend(std::iter::once(
-      http::HeaderValue::from_str(&self.0).unwrap(),
-    ));
-  }
-}
-
-impl HeaderXSecret {
-  pub fn from_static(src: &'static str) -> Self {
-    Self(src.to_owned())
-  }
-
-  pub fn as_str(&self) -> &str {
-    self.0.as_str()
   }
 }
 
@@ -268,7 +260,15 @@ async fn worker_ws(
   ws: WebSocketUpgrade,
 ) -> impl IntoResponse {
   match secret {
-    Some(TypedHeader(secret)) if secret.as_str() == mit_workers.secret => (),
+    Some(TypedHeader(secret))
+      if ring::constant_time::verify_slices_are_equal(
+        secret.as_bytes(),
+        mit_workers.secret.as_bytes(),
+      )
+      .is_ok() =>
+    {
+      ()
+    }
     _ => return StatusCode::FORBIDDEN.into_response(),
   }
 
@@ -322,7 +322,7 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
       _ = tx.send(TaskWatchMessage::Pending(i));
     }
 
-    decrement_gauge!("mit_worker_queue_length", 1.);
+    data.queue_len_dec();
 
     drop(queue);
 
@@ -383,7 +383,7 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
           _ = tx.send(TaskWatchMessage::Error(true));
 
           data.queue.lock().await.push_front((task, tx));
-          increment_gauge!("mit_worker_queue_length", 1.);
+          data.queue_len_inc();
 
           data.notify.notify_one();
         } else {

@@ -20,6 +20,7 @@ use tracing_subscriber::prelude::*;
 use crate::r2::R2Inner;
 
 mod error;
+mod headers;
 mod images;
 mod mit_worker;
 mod prisma;
@@ -72,8 +73,9 @@ async fn main() -> Result<()> {
   ));
 
   let (prometheus_layer, metric_handle) = PrometheusMetricLayerBuilder::new()
-    .with_ignore_patterns(&["/metrics"])
-    .with_group_patterns_as("/task/{id}/event/v1", &[("/task/:id/event/v1")])
+    // .with_ignore_patterns(&["/metrics"])
+    .with_group_patterns_as("/task/:id/status/v1", &[("/task/:id/status/v1")])
+    .with_group_patterns_as("/task/:id/event/v1", &[("/task/:id/event/v1")])
     .with_metrics_from_fn(|| {
       PrometheusBuilder::new()
         .set_buckets_for_metric(
