@@ -12,7 +12,7 @@
     "@unocss/nuxt": "^0.50.6",
     "@vueuse/core": "^9.13.0",
     "@vueuse/nuxt": "^9.13.0",
-    "nuxt": "^3.3.1",
+    "nuxt": "^3.3.2",
     "nuxt-headlessui": "^1.1.1"
   }
 }
