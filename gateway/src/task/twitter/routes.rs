@@ -97,7 +97,7 @@ async fn twitter_create_v1(
       id: db_task.id.clone(),
       status: db_task.state.to_string(),
       result: db_task.translation_mask.map(|translation_mask| TaskResult {
-        translation_mask: r2.public_url(&translation_mask),
+        translation_mask: r2.public.public_url(&translation_mask),
       }),
     }));
   }

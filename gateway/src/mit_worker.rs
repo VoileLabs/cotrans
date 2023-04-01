@@ -157,7 +157,7 @@ impl MITWorkersInner {
     let source_image = if let Some(source_image) = source_image {
       source_image
     } else {
-      self.data.r2.get(&db_task.source_image.file).await?
+      self.data.r2.private.get(&db_task.source_image.file).await?
     };
 
     let result = db_task
@@ -467,7 +467,8 @@ where
         }
 
         let translation_mask_file = translation_mask_key(task.id());
-        r2.put(&translation_mask_file, &finish_task.translation_mask.into())
+        r2.public
+          .put(&translation_mask_file, &finish_task.translation_mask.into())
           .await?;
 
         db.task()

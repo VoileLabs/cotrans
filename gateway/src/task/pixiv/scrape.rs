@@ -32,7 +32,7 @@ pub async fn pixiv_artwork(
         let image_bytes = image.bytes().await?;
 
         let image_file = r2::pixiv_image_key(artwork_id, page);
-        r2.put(&image_file, &image_bytes).await?;
+        r2.private.put(&image_file, &image_bytes).await?;
 
         let image = images::load_bytes_guessed(&image_bytes)?;
         let (hash, image) = spawn_blocking(move || (images::hash(&image), image)).await?;

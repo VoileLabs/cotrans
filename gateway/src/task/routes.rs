@@ -71,7 +71,7 @@ async fn task_status_v1(
   {
     let res = QueryV1Message::Result {
       result: TaskResult {
-        translation_mask: r2.public_url(translation_mask),
+        translation_mask: r2.public.public_url(translation_mask),
       },
     };
     return Ok(Json(res));
@@ -86,7 +86,7 @@ async fn convert_msg(r2: &R2Client, msg: TaskWatchMessage) -> AppResult<QueryV1M
     TaskWatchMessage::Status(status) => Ok(QueryV1Message::Status { status }),
     TaskWatchMessage::Result(result) => Ok(QueryV1Message::Result {
       result: TaskResult {
-        translation_mask: r2.public_url(&result.translation_mask),
+        translation_mask: r2.public.public_url(&result.translation_mask),
       },
     }),
     TaskWatchMessage::Error(retry) => Ok(QueryV1Message::Error {
@@ -170,7 +170,7 @@ async fn task_query_v1_ws(
         socket,
         QueryV1Message::Result {
           result: TaskResult {
-            translation_mask: r2.public_url(translation_mask),
+            translation_mask: r2.public.public_url(translation_mask),
           },
         },
       )
@@ -202,7 +202,7 @@ async fn send_watch_msg(
         socket,
         QueryV1Message::Result {
           result: TaskResult {
-            translation_mask: r2.public_url(&result.translation_mask),
+            translation_mask: r2.public.public_url(&result.translation_mask),
           },
         },
       )

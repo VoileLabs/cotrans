@@ -6,7 +6,7 @@ use image_hasher::{FilterType, Hasher, HasherConfig};
 use once_cell::sync::Lazy;
 use ring::digest;
 
-use crate::{error::AppResult, R2Client};
+use crate::{error::AppResult, r2::R2Bucket};
 
 pub fn load_bytes(bytes: &Bytes) -> Result<DynamicImage, ImageError> {
   ImageReader::with_format(Cursor::new(bytes), ImageFormat::Png).decode()
@@ -18,8 +18,8 @@ pub fn load_bytes_guessed(bytes: &Bytes) -> Result<DynamicImage, ImageError> {
     .decode()
 }
 
-pub async fn load_r2(key: &str, r2_client: &R2Client) -> AppResult<DynamicImage> {
-  let bytes = r2_client.get(key).await?;
+pub async fn load_r2(key: &str, bucket: &R2Bucket) -> AppResult<DynamicImage> {
+  let bytes = bucket.get(key).await?;
   Ok(load_bytes(&bytes)?)
 }
 

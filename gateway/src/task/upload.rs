@@ -205,7 +205,7 @@ async fn upload_create_v1(
   .await??;
 
   let key = r2::upload_image_key(&sha);
-  r2.put(&key, &png).await?;
+  r2.private.put(&key, &png).await?;
 
   let source = db
     .source_image()
@@ -244,7 +244,7 @@ async fn upload_create_v1(
         id: db_task.id.clone(),
         status: TaskState::from(db_task.state).to_string(),
         result: Some(TaskResult {
-          translation_mask: r2.public_url(translation_mask),
+          translation_mask: r2.public.public_url(translation_mask),
         }),
       }));
     }

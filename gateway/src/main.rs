@@ -17,7 +17,7 @@ use tower_http::{
 };
 use tracing_subscriber::prelude::*;
 
-use crate::r2::R2Inner;
+use crate::r2::{R2Bucket, R2BucketPublic, R2Inner};
 
 mod error;
 mod headers;
@@ -59,12 +59,19 @@ async fn main() -> Result<()> {
   // http client
   let http = reqwest::Client::new();
   // r2 client
-  let r2 = Arc::new(R2Inner::new(
-    http.clone(),
-    env::var("R2_BASE")?,
-    env::var("R2_PUBLIC_BASE")?,
-    env::var("R2_SECRET")?,
-  ));
+  let r2 = Arc::new(R2Inner {
+    private: R2Bucket::new(
+      http.clone(),
+      env::var("R2_PRIVATE_BASE")?,
+      env::var("R2_PRIVATE_SECRET")?,
+    ),
+    public: R2BucketPublic::new(
+      http.clone(),
+      env::var("R2_PUBLIC_BASE")?,
+      env::var("R2_PUBLIC_SECRET")?,
+      env::var("R2_PUBLIC_BASE_PUBLIC")?,
+    ),
+  });
   // mit workers
   let mit_workers = Arc::new(MITWorkersInner::new(
     env::var("MIT_WORKER_SECRET")?,

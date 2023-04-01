@@ -43,7 +43,7 @@ pub async fn twitter_tweet_images(
         let image_bytes = image.bytes().await?;
 
         let image_file = r2::tweet_image_key(&tweet_id, &image_id);
-        r2.put(&image_file, &image_bytes).await?;
+        r2.private.put(&image_file, &image_bytes).await?;
 
         let image = images::load_bytes(&image_bytes)?;
         let (hash, image) = spawn_blocking(move || (images::hash(&image), image)).await?;
