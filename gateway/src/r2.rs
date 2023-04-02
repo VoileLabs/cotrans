@@ -3,6 +3,7 @@ use std::{collections::HashMap, ops::Deref};
 use axum::body::Bytes;
 use reqwest::Result;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct R2Inner {
@@ -33,6 +34,7 @@ impl R2Bucket {
   }
 
   pub async fn get(&self, key: &str) -> Result<Bytes> {
+    debug!(key = %key, "get object from r2");
     self
       .client
       .get(&format!("{}/{}", self.base, key))
@@ -44,6 +46,7 @@ impl R2Bucket {
   }
 
   pub async fn put(&self, key: &str, value: &Bytes) -> Result<()> {
+    debug!(key = %key, file_len = %bytefmt::format(value.len() as u64), "put object to r2");
     self
       .client
       .put(&format!("{}/{}", self.base, key))
@@ -56,6 +59,7 @@ impl R2Bucket {
   }
 
   pub async fn delete(&self, key: &str) -> Result<()> {
+    debug!(key = %key, "delete object from r2");
     self
       .client
       .delete(&format!("{}/{}", self.base, key))

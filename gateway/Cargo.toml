@@ -25,7 +25,7 @@ ring = "0.16.20"
 bytefmt = "0.1.7"
 quanta = "0.11.0"
 
-futures = "0.3.27"
+futures = "0.3.28"
 tokio = { version = "1.27.0", features = ["full"] }
 
 http = "0.2.9"
@@ -56,4 +56,4 @@ default-features = false
 features = ["postgresql"]
 
 [target.x86_64-unknown-linux-musl.dependencies]
-openssl = { version = "0.10.48", features = ["vendored"] }
+openssl = { version = "0.10.49", features = ["vendored"] }
