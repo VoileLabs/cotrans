@@ -60,12 +60,12 @@ const translator = $ref('youdao')
 const acceptTypes = ['image/png', 'image/jpeg', 'image/bmp', 'image/webp']
 let file = $shallowRef<File | null>(null)
 
-const onDrop = (e: DragEvent) => {
+function onDrop(e: DragEvent) {
   const f = e.dataTransfer?.files[0]
   if (f && acceptTypes.includes(f.type))
     file = f
 }
-const onFileChange = (e: Event) => {
+function onFileChange(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0]
   if (f && acceptTypes.includes(f.type))
     file = f
@@ -113,7 +113,7 @@ let errorId = $ref('')
 let errorStatus = $ref('')
 let resultBlob = $ref<Blob | null>(null)
 let status = $ref('')
-const upload = async () => {
+async function upload() {
   if (!file)
     return
 
@@ -219,7 +219,7 @@ watch($$(resultBlob), (blob) => {
   resultUri = blob ? URL.createObjectURL(blob) : ''
 })
 
-const saveAsPNG = () => {
+function saveAsPNG() {
   if (!resultUri || !taskId)
     return
 
@@ -232,7 +232,7 @@ const saveAsPNG = () => {
   document.body.removeChild(a)
 }
 
-const reset = () => {
+function reset() {
   file = null
   taskId = ''
   errorId = ''

@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs from 'node:fs'
 import glob from 'fast-glob'
 import { defineConfig } from 'rollup'
 import { nodeResolve } from '@rollup/plugin-node-resolve'

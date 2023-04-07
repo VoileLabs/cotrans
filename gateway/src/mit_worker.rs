@@ -319,7 +319,7 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
 
     // notify other tasks position
     for (i, (_, tx)) in queue.iter_mut().enumerate() {
-      _ = tx.send(TaskWatchMessage::Pending(i));
+      _ = tx.send(TaskWatchMessage::Pending(i + 1));
     }
 
     data.queue_len_dec();

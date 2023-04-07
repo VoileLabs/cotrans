@@ -16,7 +16,7 @@ const optionsEl = shallowRef<HTMLDivElement | null>()
 const rootPos = useElementBounding(rootEl, { immediate: true })
 
 const diaOpen = ref(false)
-const updateOpen = (n: boolean) => {
+function updateOpen(n: boolean) {
   diaOpen.value = n
 }
 watch(diaOpen, () => {

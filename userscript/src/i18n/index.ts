@@ -23,8 +23,8 @@ function tryMatchLang(lang: string): string {
 export const [realLang, setRealLang] = createSignal(navigator.language)
 export const lang = createMemo(() => scriptLang() || tryMatchLang(realLang()))
 
-export const t = (key_: MaybeAccessor<string>, props: MaybeAccessor<Record<string, MaybeAccessor<unknown>>> = {}): Accessor<string> =>
-  createMemo(() => {
+export function t(key_: MaybeAccessor<string>, props: MaybeAccessor<Record<string, MaybeAccessor<unknown>>> = {}): Accessor<string> {
+  return createMemo(() => {
     const key = access(key_)
     const segments = key.split('.')
     const msg: string = segments.reduce((obj, k) => obj[k], messages[lang()]) ?? segments.reduce((obj, k) => obj[k], messages['zh-CN'])
@@ -32,11 +32,12 @@ export const t = (key_: MaybeAccessor<string>, props: MaybeAccessor<Record<strin
       return key
     return msg.replace(/\{([^}]+)\}/g, (_, k) => String(access(access(props)[k])) ?? '')
   })
+}
 
 let langEL: HTMLHtmlElement | undefined
 let langObserver: MutationObserver | undefined
 
-export const changeLangEl = (el: HTMLHtmlElement) => {
+export function changeLangEl(el: HTMLHtmlElement) {
   if (langEL === el)
     return
 
