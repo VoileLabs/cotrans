@@ -9,7 +9,7 @@
 // @license           GPL-3.0
 // @contributionURL   https://ko-fi.com/voilelabs
 // @supportURL        https://github.com/VoileLabs/cotrans/issues
-// @source            https://github.com/VoileLabs/cotrans
+// @source            https://cotrans.touhou.ai/
 // @include http*://www.pixiv.net/*
 // @match http://www.pixiv.net/
 // @include http*://twitter.com/*

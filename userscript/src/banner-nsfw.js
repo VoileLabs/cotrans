@@ -9,7 +9,7 @@
 // @license           GPL-3.0
 // @contributionURL   https://ko-fi.com/voilelabs
 // @supportURL        https://github.com/VoileLabs/cotrans/issues
-// @source            https://github.com/VoileLabs/cotrans
+// @source            https://cotrans.touhou.ai/
 // @include http*://e-hentai.org/*
 // @match http://e-hentai.org/
 // @include http*://exhentai.org/*
