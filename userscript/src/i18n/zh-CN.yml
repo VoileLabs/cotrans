@@ -30,7 +30,7 @@ common:
     error-translating: 翻译服务没有返回任何文本
   control:
     translate: 翻译
-    batch: 翻译全部
+    batch: 翻译全部 ({count})
     reset: 还原
   batch:
     progress: 翻译中 ({count}/{total})

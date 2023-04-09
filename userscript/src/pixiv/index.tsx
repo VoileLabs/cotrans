@@ -3,6 +3,7 @@ import { For, Show, createMemo, createRoot, createSignal, onCleanup } from 'soli
 import { Dynamic, Match, Switch, render } from 'solid-js/web'
 import { createMutationObserver } from '@solid-primitives/mutation-observer'
 import { throttle } from '@solid-primitives/scheduled'
+import { ReactiveMap } from '@solid-primitives/map'
 import type { Translator, TranslatorInstance } from '../main'
 import type { TranslateOptionsOverwrite } from '../utils/core'
 import {
@@ -44,7 +45,7 @@ function mount(): TranslatorInstance {
   }
 
   const images = new Set<HTMLImageElement>()
-  const instances = new Map<HTMLImageElement, Instance>()
+  const instances = new ReactiveMap<HTMLImageElement, Instance>()
   const translatedMap = new Map<string, string>()
   const translateEnabledMap = new Map<string, boolean>()
 
@@ -598,20 +599,20 @@ function mount(): TranslatorInstance {
       >
         <Switch>
           <Match when={!started()}>
-            {t('common.control.batch')}
+            {t('common.control.batch', { count: instances.size })()}
           </Match>
           <Match when={finished() !== total()}>
             {t('common.batch.progress', {
               count: finished(),
               total: total(),
-            })}
+            })()}
           </Match>
           <Match when={finished() === total()}>
             <Show
               when={!erred()}
-              fallback={t('common.batch.error')}
+              fallback={t('common.batch.error')()}
             >
-              {t('common.batch.finish')}
+              {t('common.batch.finish')()}
             </Show>
           </Match>
         </Switch>

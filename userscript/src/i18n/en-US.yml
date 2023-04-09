@@ -30,7 +30,7 @@ common:
     error-translating: Did not get any text back from the text translation service
   control:
     translate: Translate
-    batch: Translate all
+    batch: Translate all ({count})
     reset: Reset
   batch:
     progress: Translating ({count}/{total} finished)
