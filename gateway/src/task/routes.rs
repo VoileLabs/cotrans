@@ -77,6 +77,13 @@ async fn task_status_v1(
     return Ok(Json(res));
   }
 
+  if db_task.state == prisma::TaskState::Error {
+    let res = QueryV1Message::Error {
+      error_id: None,
+    };
+    return Ok(Json(res));
+  }
+
   Ok(Json(QueryV1Message::NotFound))
 }
 
