@@ -35,6 +35,8 @@ use crate::{
   AppState, Database, MITWorkers, R2Client,
 };
 
+pub static WORKER_REVISION: i32 = 1;
+
 #[derive(Debug, Clone)]
 pub enum TaskWatchMessage {
   Pending(usize),
@@ -110,7 +112,9 @@ impl MITWorkersInner {
       .data
       .db
       .task()
-      .find_many(vec![])
+      .find_many(vec![
+        prisma::task::worker_revision::equals(WORKER_REVISION),
+      ])
       .include(DBToTask::include())
       .exec()
       .await?;

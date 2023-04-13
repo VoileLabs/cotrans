@@ -289,7 +289,7 @@ function mount(): TranslatorInstance {
     const svgParent = svg.parentElement!
     const buttonIconContainer = document.createElement('div')
     svgParent.insertBefore(buttonIconContainer, svg)
-    svgParent.removeChild(svg)
+    svg.remove()
     const disposeButtonIcon = render(() => (
       <Dynamic
         component={isEnabled() ? IconCarbonReset : IconCarbonTranslate}
@@ -499,7 +499,7 @@ function mount(): TranslatorInstance {
     onCleanup(disposeButtonStatus)
 
     onCleanup(() => {
-      buttonParent.removeChild(container)
+      container.remove()
       for (const img of images()) {
         if (img.hasAttribute('data-transurl')) {
           const transurl = img.getAttribute('data-transurl')!
@@ -507,6 +507,7 @@ function mount(): TranslatorInstance {
           img.removeAttribute('data-transurl')
         }
       }
+      setImages([])
     })
 
     return {
