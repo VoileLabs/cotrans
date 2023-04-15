@@ -9,10 +9,10 @@
   },
   "devDependencies": {
     "@iconify-json/ri": "^1.1.7",
-    "@unocss/nuxt": "^0.51.0",
-    "@vueuse/core": "^9.13.0",
-    "@vueuse/nuxt": "^9.13.0",
-    "nuxt": "^3.3.3",
+    "@unocss/nuxt": "^0.51.4",
+    "@vueuse/core": "^10.0.2",
+    "@vueuse/nuxt": "^10.0.2",
+    "nuxt": "^3.4.1",
     "nuxt-headlessui": "^1.1.1"
   }
 }

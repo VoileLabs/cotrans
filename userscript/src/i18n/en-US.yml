@@ -66,5 +66,14 @@ settings:
   translator-desc: The translate service used to translate texts.
   translator-options:
     none: None (remove texts)
+  keep-instances-options:
+    until-reload: Until page reload
+    until-navigate: Until next navigation
+  keep-instances: Keep translation instances
+  keep-instances-desc: >-
+    How long before a translation instance is disposed. A translation instance
+    includes the translation state of an image, that is, whether the image is
+    translated or not, and the translation result. Keeping more translation
+    instances will result in more memory consumption.
 sponsor:
   text: If you find this script helpful, please consider supporting us!

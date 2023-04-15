@@ -1,25 +1,11 @@
+import { ReactiveMap } from '@solid-primitives/map'
+import { createMutationObserver } from '@solid-primitives/mutation-observer'
+import { throttle } from '@solid-primitives/scheduled'
 import type { Accessor, Component } from 'solid-js'
 import { For, Show, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { Dynamic, Match, Switch, render } from 'solid-js/web'
-import { createMutationObserver } from '@solid-primitives/mutation-observer'
-import { throttle } from '@solid-primitives/scheduled'
-import { ReactiveMap } from '@solid-primitives/map'
-import type { Translator, TranslatorInstance } from '../main'
-import type { TranslateOptionsOverwrite } from '../utils/core'
-import {
-  downloadBlob,
-  pullTranslationStatus,
-  resizeToSubmit,
-  submitTranslate,
-} from '../utils/core'
 import { t } from '../i18n'
-import { formatProgress } from '../utils'
-import {
-  detectionResolution,
-  renderTextOrientation,
-  textDetector,
-  translatorService,
-} from '../utils/storage'
+import type { Translator, TranslatorInstance } from '../main'
 import {
   detectResOptions,
   detectResOptionsMap,
@@ -30,10 +16,24 @@ import {
   translatorOptions,
   translatorOptionsMap,
 } from '../settings'
+import { formatProgress } from '../utils'
+import type { TranslateOptionsOverwrite } from '../utils/core'
+import {
+  downloadBlob,
+  pullTranslationStatus,
+  resizeToSubmit,
+  submitTranslate,
+} from '../utils/core'
+import {
+  detectionResolution,
+  renderTextOrientation,
+  textDetector,
+  translatorService,
+} from '../utils/storage'
 import IconCarbonTranslate from '~icons/carbon/translate'
 import IconCarbonReset from '~icons/carbon/reset'
-import IconCarbonChevronLeft from '~icons/carbon/chevron-left'
 import IconCarbonChevronRight from '~icons/carbon/chevron-right'
+import IconCarbonChevronLeft from '~icons/carbon/chevron-left'
 
 function mount(): TranslatorInstance {
   interface Instance {
@@ -255,11 +255,15 @@ function mount(): TranslatorInstance {
 
                                   if (optIndex() <= 0)
                                     return
+                                  // @ts-expect-error setOpt are incompatible with each other
                                   setOpt(opts[optIndex() - 1])
                                 }}
                               />
                             </Show>
-                            <div>{optMap[opt()]()}</div>
+                            <div>{
+                              // @ts-expect-error optMap are incompatible with each other
+                              optMap[opt()]()
+                            }</div>
                             <Show
                               when={optIndex() < opts.length - 1}
                               fallback={<div style={{ width: '1.2em' }} />}
@@ -275,6 +279,7 @@ function mount(): TranslatorInstance {
 
                                   if (optIndex() >= opts.length - 1)
                                     return
+                                  // @ts-expect-error setOpt are incompatible with each other
                                   setOpt(opts[optIndex() + 1])
                                 }}
                               />

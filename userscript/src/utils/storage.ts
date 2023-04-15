@@ -1,5 +1,14 @@
 import type { Accessor, Setter } from 'solid-js'
 import { createEffect, createSignal, on, onCleanup } from 'solid-js'
+import type {
+  DetectResOption,
+  KeepInstancesOption,
+  RenderTextDirOption,
+  ScriptLangOption,
+  TargetLangOption,
+  TextDetectorOption,
+  TranslatorOption,
+} from '../settings'
 
 export type GMSignal<T> = [
   Accessor<T> & {
@@ -62,12 +71,13 @@ export function createGMSignal<T>(key: string, initialValue?: T) {
   return [signal, setSignal]
 }
 
-export const [detectionResolution, setDetectionResolution] = createGMSignal('detectionResolution', 'M')
-export const [textDetector, setTextDetector] = createGMSignal('textDetector', 'default')
-export const [translatorService, setTranslatorService] = createGMSignal('translator', 'youdao')
-export const [renderTextOrientation, setRenderTextOrientation] = createGMSignal('renderTextOrientation', 'auto')
-export const [targetLang, setTargetLang] = createGMSignal('targetLang', '')
-export const [scriptLang, setScriptLang] = createGMSignal('scriptLanguage', '')
+export const [detectionResolution, setDetectionResolution] = createGMSignal<DetectResOption>('detectionResolution', 'M')
+export const [textDetector, setTextDetector] = createGMSignal<TextDetectorOption>('textDetector', 'default')
+export const [translatorService, setTranslatorService] = createGMSignal<TranslatorOption>('translator', 'youdao')
+export const [renderTextOrientation, setRenderTextOrientation] = createGMSignal<RenderTextDirOption>('renderTextOrientation', 'auto')
+export const [targetLang, setTargetLang] = createGMSignal<TargetLangOption>('targetLang', '')
+export const [scriptLang, setScriptLang] = createGMSignal<ScriptLangOption>('scriptLanguage', '')
+export const [keepInstances, setKeepInstances] = createGMSignal<KeepInstancesOption>('keepInstances', 'until-reload')
 
 export const storageReady = Promise.all([
   detectionResolution.ready,

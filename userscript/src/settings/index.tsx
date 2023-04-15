@@ -1,10 +1,13 @@
 import type { Accessor, Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { t } from '../i18n'
 import {
   detectionResolution,
+  keepInstances,
   renderTextOrientation,
   scriptLang,
   setDetectionResolution,
+  setKeepInstances,
   setRenderTextOrientation,
   setScriptLang,
   setTargetLang,
@@ -14,29 +17,34 @@ import {
   textDetector,
   translatorService,
 } from '../utils/storage'
-import { t } from '../i18n'
 
 type OptionsMap = Record<string, Accessor<string>>
 
-export const detectResOptionsMap: OptionsMap = {
+export const detectResOptionsMap = {
   S: () => '1024px',
   M: () => '1536px',
   L: () => '2048px',
   X: () => '2560px',
-}
+} satisfies OptionsMap
 export const detectResOptions = Object.keys(detectResOptionsMap)
-export const renderTextDirOptionsMap: OptionsMap = {
+export type DetectResOption = keyof typeof detectResOptionsMap
+
+export const renderTextDirOptionsMap = {
   auto: t('settings.render-text-orientation-options.auto'),
   horizontal: t('settings.render-text-orientation-options.horizontal'),
   vertical: t('settings.render-text-orientation-options.vertical'),
-}
+} satisfies OptionsMap
 export const renderTextDirOptions = Object.keys(renderTextDirOptionsMap)
-export const textDetectorOptionsMap: OptionsMap = {
+export type RenderTextDirOption = keyof typeof renderTextDirOptionsMap
+
+export const textDetectorOptionsMap = {
   default: t('settings.text-detector-options.default'),
   ctd: () => 'Comic Text Detector',
-}
+} satisfies OptionsMap
 export const textDetectorOptions = Object.keys(textDetectorOptionsMap)
-export const translatorOptionsMap: OptionsMap = {
+export type TextDetectorOption = keyof typeof textDetectorOptionsMap
+
+export const translatorOptionsMap = {
   youdao: () => 'Youdao',
   baidu: () => 'Baidu',
   google: () => 'Google',
@@ -50,9 +58,11 @@ export const translatorOptionsMap: OptionsMap = {
   // sugoi: () => 'Sugoi',
   // sugoi_small: () => 'Sugoi (Small)',
   // sugoi_big: () => 'Sugoi (Big)',
-}
+} satisfies OptionsMap
 export const translatorOptions = Object.keys(translatorOptionsMap)
-export const targetLangOptionsMap: OptionsMap = {
+export type TranslatorOption = keyof typeof translatorOptionsMap
+
+export const targetLangOptionsMap = {
   '': t('settings.target-language-options.auto'),
   'CHS': () => '简体中文',
   'CHT': () => '繁體中文',
@@ -73,14 +83,24 @@ export const targetLangOptionsMap: OptionsMap = {
   'UKR': () => 'українська мова',
   'ESP': () => 'español',
   'TRK': () => 'Türk dili',
-}
+} satisfies OptionsMap
 export const targetLangOptions = Object.keys(targetLangOptionsMap)
-export const scriptLangOptionsMap: OptionsMap = {
+export type TargetLangOption = keyof typeof targetLangOptionsMap
+
+export const scriptLangOptionsMap = {
   '': t('settings.script-language-options.auto'),
   'zh-CN': () => '简体中文',
   'en-US': () => 'English',
-}
+} satisfies OptionsMap
 export const scriptLangOptions = Object.keys(scriptLangOptionsMap)
+export type ScriptLangOption = keyof typeof scriptLangOptionsMap
+
+export const keepInstancesOptionsMap = {
+  'until-reload': t('settings.keep-instances-options.until-reload'),
+  'until-navigate': t('settings.keep-instances-options.until-navigate'),
+} satisfies OptionsMap
+export const keepInstancesOptions = Object.keys(keepInstancesOptionsMap)
+export type KeepInstancesOption = keyof typeof keepInstancesOptionsMap
 
 export const Settings: Component<{
   itemOrientation?: 'vertical' | 'horizontal'
@@ -152,6 +172,11 @@ export const Settings: Component<{
           scriptLang, setScriptLang, scriptLangOptionsMap,
           t('settings.script-language-desc'),
         ] as const,
+        [
+          t('settings.keep-instances'),
+          keepInstances, setKeepInstances, keepInstancesOptionsMap,
+          t('settings.keep-instances-desc'),
+        ] as const,
       ]}>{([title, opt, setOpt, optMap, desc]) => (
         <div
           style={itemOrientation === 'horizontal'
@@ -166,6 +191,7 @@ export const Settings: Component<{
           <div>
             <select
               value={opt()}
+              // @ts-expect-error setOpt are incompatible with each other
               onChange={e => setOpt((e.target as HTMLSelectElement).value)}
             >
               {Object.entries(optMap).map(([value, label]) => (

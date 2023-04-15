@@ -1,8 +1,8 @@
+import { throttle } from '@solid-primitives/scheduled'
 import { createRoot } from 'solid-js'
 import { DelegatedEvents } from 'solid-js/web'
-import { throttle } from '@solid-primitives/scheduled'
-import { checkCSS } from './style'
 import { changeLangEl } from './i18n'
+import { checkCSS } from './style'
 import { storageReady } from './utils/storage'
 
 // https://github.com/solidjs/solid/issues/334#issuecomment-773807937

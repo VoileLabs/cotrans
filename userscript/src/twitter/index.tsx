@@ -1,11 +1,13 @@
+import { createMutationObserver } from '@solid-primitives/mutation-observer'
+import { throttle } from '@solid-primitives/scheduled'
 import type { Accessor, Setter } from 'solid-js'
 import { For, Match, Show, Switch, createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { Dynamic, render } from 'solid-js/web'
-import { createMutationObserver } from '@solid-primitives/mutation-observer'
-import { throttle } from '@solid-primitives/scheduled'
-import type { Translator, TranslatorInstance } from '../main'
 import { t } from '../i18n'
+import type { Translator, TranslatorInstance } from '../main'
+import { detectResOptions, detectResOptionsMap, renderTextDirOptions, renderTextDirOptionsMap, textDetectorOptions, textDetectorOptionsMap, translatorOptions, translatorOptionsMap } from '../settings'
+import { assert, formatProgress } from '../utils'
 import type { TranslateOptionsOverwrite } from '../utils/core'
 import {
   downloadBlob,
@@ -13,15 +15,14 @@ import {
   resizeToSubmit,
   submitTranslate,
 } from '../utils/core'
-import { assert, formatProgress } from '../utils'
-import { detectionResolution, renderTextOrientation, textDetector, translatorService } from '../utils/storage'
-import { detectResOptions, detectResOptionsMap, renderTextDirOptions, renderTextDirOptionsMap, textDetectorOptions, textDetectorOptionsMap, translatorOptions, translatorOptionsMap } from '../settings'
+import { detectionResolution, keepInstances, renderTextOrientation, textDetector, translatorService } from '../utils/storage'
 import IconCarbonTranslate from '~icons/carbon/translate'
 import IconCarbonReset from '~icons/carbon/reset'
-import IconCarbonChevronLeft from '~icons/carbon/chevron-left'
 import IconCarbonChevronRight from '~icons/carbon/chevron-right'
+import IconCarbonChevronLeft from '~icons/carbon/chevron-left'
 
 function mount(): TranslatorInstance {
+  const mountAuthorId = location.pathname.split('/', 2)[1]
   const [statusId, setStatusId] = createSignal(location.pathname.match(/\/status\/(\d+)/)?.[1])
 
   const [translatedMap, setTranslatedMap] = createStore<Record<string, string>>({})
@@ -435,11 +436,15 @@ function mount(): TranslatorInstance {
 
                               if (optIndex() <= 0)
                                 return
+                              // @ts-expect-error setOpt are incompatible with each other
                               setOpt(opts[optIndex() - 1])
                             }}
                           />
                         </Show>
-                        <div>{optMap[opt()]()}</div>
+                        <div>{
+                          // @ts-expect-error optMap are incompatible with each other
+                          optMap[opt()]()
+                        }</div>
                         <Show
                           when={optIndex() < opts.length - 1}
                           fallback={<div style={{ width: '1.2em' }} />}
@@ -455,6 +460,7 @@ function mount(): TranslatorInstance {
 
                               if (optIndex() >= opts.length - 1)
                                 return
+                              // @ts-expect-error setOpt are incompatible with each other
                               setOpt(opts[optIndex() + 1])
                             }}
                           />
@@ -595,7 +601,14 @@ function mount(): TranslatorInstance {
 
   return {
     canKeep(url) {
-      return url.startsWith('https://twitter.com/')
+      switch (keepInstances()) {
+        case 'until-reload':
+          return url.startsWith('https://twitter.com/')
+        case 'until-navigate':
+          return url.startsWith(`https://twitter.com/${mountAuthorId}`)
+        default:
+          return false
+      }
     },
     onURLChange(url) {
       setStatusId(url.match(/\/status\/(\d+)/)?.[1])

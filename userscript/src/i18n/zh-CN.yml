@@ -64,5 +64,12 @@ settings:
   script-language-desc: 设置此用户脚本的语言。
   translator-options:
     none: None (删除文字)
+  keep-instances-options:
+    until-reload: 直到页面刷新
+    until-navigate: 直到下次跳转
+  keep-instances: 保留翻译进度
+  keep-instances-desc: >-
+    设置翻译进度的保留时间。 翻译进度即图片的翻译状态和翻译结果。
+    保留更多的翻译进度会占用更多的内存。
 sponsor:
   text: 制作不易，请考虑赞助我们！
