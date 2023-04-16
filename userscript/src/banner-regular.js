@@ -8,7 +8,7 @@
 // @author            QiroNT
 // @license           GPL-3.0
 // @contributionURL   https://ko-fi.com/voilelabs
-// @supportURL        https://github.com/VoileLabs/cotrans/issues
+// @supportURL        https://discord.gg/975FRV8ca6
 // @source            https://cotrans.touhou.ai/
 // @include http*://www.pixiv.net/*
 // @match http://www.pixiv.net/

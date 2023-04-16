@@ -1,5 +1,8 @@
 # Cotrans
 
+A working-in-progress collaborative online image/manga translation platform base on
+[manga-image-translator](https://github.com/zyddnys/manga-image-translator).
+
 ## Supported websites
 
 | Site                           | Status |
