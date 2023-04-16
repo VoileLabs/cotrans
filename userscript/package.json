@@ -29,7 +29,7 @@
     "babel-preset-solid": "^1.7.3",
     "esbuild": "^0.17.16",
     "fast-glob": "^3.2.12",
-    "happy-dom": "^9.6.1",
+    "happy-dom": "^9.7.1",
     "magic-string": "^0.30.0",
     "rimraf": "^5.0.0",
     "rollup": "^3.20.2",

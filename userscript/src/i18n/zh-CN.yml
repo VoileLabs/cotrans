@@ -28,6 +28,7 @@ common:
     error: 翻译出错
     error-lang: 你选择的翻译服务不支持你选择的语言
     error-translating: 翻译服务没有返回任何文本
+    error-with-id: '翻译出错 (ID: {id})'
   control:
     translate: 翻译
     batch: 翻译全部 ({count})

@@ -381,7 +381,8 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
           .await
           .is_ok();
 
-        if db_ok && task.failed_count < 3 {
+        // TODO consider when to retry
+        if db_ok && task.failed_count < 1 {
           _ = tx.send(TaskWatchMessage::Error(true));
 
           data.queue.lock().await.push_front((task, tx));
