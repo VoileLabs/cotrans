@@ -24,6 +24,7 @@ use futures::{Sink, SinkExt, Stream, StreamExt};
 use http::StatusCode;
 use metrics::{counter, decrement_gauge, gauge, histogram, increment_counter, increment_gauge};
 use prost::Message;
+use thiserror::Error;
 use tokio::sync::{watch, Mutex, Notify};
 
 use crate::{
@@ -36,6 +37,7 @@ use crate::{
 };
 
 pub static WORKER_REVISION: i32 = 1;
+pub static QUEUE_LIMIT: usize = 60;
 
 #[derive(Debug, Clone)]
 pub enum TaskWatchMessage {
@@ -44,6 +46,10 @@ pub enum TaskWatchMessage {
   Result(TaskResult),
   Error(bool),
 }
+
+#[derive(Error, Debug, Clone)]
+#[error("Queue is full")]
+pub struct QueueFullError();
 
 pub struct MITWorkersInner {
   secret: String,
@@ -183,16 +189,20 @@ impl MITWorkersInner {
     ))
   }
 
-  pub async fn dispatch_task(&self, task: Task) {
+  pub async fn dispatch_task(&self, task: Task) -> AppResult<()> {
     tracing::debug!(task_id = %task.id(), "dispatching task");
     increment_counter!("mit_worker_task_dispatch_count");
     // we lock the queue first to prevent other threads from dispatching the same task
     let mut queue = self.data.queue.lock().await;
+    if queue.len() >= QUEUE_LIMIT {
+      return Err(QueueFullError().into());
+    }
     let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len() + 1));
     self.data.tasks.insert(task.id().to_owned(), rx);
     queue.push_back((task, tx));
     self.data.queue_len_inc();
     self.data.notify.notify_one();
+    Ok(())
   }
 
   pub async fn dispatch(
@@ -201,8 +211,7 @@ impl MITWorkersInner {
     source_image: Option<Bytes>,
   ) -> AppResult<()> {
     let task = self.db_to_task(db_task, source_image).await?;
-    self.dispatch_task(task).await;
-    Ok(())
+    self.dispatch_task(task).await
   }
 
   pub async fn status(&self, id: &str) -> Option<TaskWatchMessage> {

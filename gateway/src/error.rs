@@ -11,12 +11,12 @@ use prisma_client_rust::QueryError;
 use thiserror::Error;
 use tokio::task::JoinError;
 
-use crate::task::{
+use crate::{task::{
   pixiv::scrape::{ParsePixivArtworkAjaxError, ParsePixivArtworkPagesAjaxError},
   twitter::scrape::ParseTwitterTweetError,
   DirectionIntoDBError, InvalidDetectorError, InvalidDirectionError, InvalidLanguageError,
   InvalidSizeError, InvalidTranslatorError,
-};
+}, mit_worker::QueueFullError};
 
 pub type AppResult<T> = Result<T, AppError>;
 pub type AppJsonResult<T> = AppResult<Json<T>>;
@@ -45,6 +45,7 @@ pub enum AppError {
   InvalidLanguageError(InvalidLanguageError),
   InvalidTranslatorError(InvalidTranslatorError),
   InvalidDetectorError(InvalidDetectorError),
+  QueueFullError(QueueFullError),
   TaskFailedError(String),
 
   BadRequest(String),
@@ -135,6 +136,12 @@ impl From<InvalidDetectorError> for AppError {
   }
 }
 
+impl From<QueueFullError> for AppError {
+  fn from(error: QueueFullError) -> Self {
+    AppError::QueueFullError(error)
+  }
+}
+
 impl From<prost::DecodeError> for AppError {
   fn from(error: prost::DecodeError) -> Self {
     AppError::ProtoDecodeError(error)
@@ -214,6 +221,7 @@ impl IntoResponse for AppError {
       AppError::InvalidLanguageError(_) => StatusCode::BAD_REQUEST,
       AppError::InvalidTranslatorError(_) => StatusCode::BAD_REQUEST,
       AppError::InvalidDetectorError(_) => StatusCode::BAD_REQUEST,
+      AppError::QueueFullError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::TaskFailedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
       AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
