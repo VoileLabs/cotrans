@@ -112,9 +112,7 @@ impl MITWorkersInner {
       .data
       .db
       .task()
-      .find_many(vec![
-        prisma::task::worker_revision::equals(WORKER_REVISION),
-      ])
+      .find_many(vec![prisma::task::worker_revision::equals(WORKER_REVISION)])
       .include(DBToTask::include())
       .exec()
       .await?;
@@ -140,7 +138,7 @@ impl MITWorkersInner {
         ).exec().await;
         continue;
       };
-      let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
+      let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len() + 1));
       self.data.tasks.insert(id, rx);
       queue.push_back((task, tx));
     }
@@ -190,7 +188,7 @@ impl MITWorkersInner {
     increment_counter!("mit_worker_task_dispatch_count");
     // we lock the queue first to prevent other threads from dispatching the same task
     let mut queue = self.data.queue.lock().await;
-    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
+    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len() + 1));
     self.data.tasks.insert(task.id().to_owned(), rx);
     queue.push_back((task, tx));
     self.data.queue_len_inc();
@@ -243,7 +241,7 @@ impl MITWorkersInner {
 
     let task = self.db_to_task(db_task, source_image).await?;
 
-    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len()));
+    let (tx, rx) = watch::channel(TaskWatchMessage::Pending(queue.len() + 1));
     self.data.tasks.insert(id, rx.clone());
     queue.push_back((task, tx));
     self.data.queue_len_inc();
