@@ -84,6 +84,10 @@ impl MITWorkerData {
   pub fn queue_len(&self) -> usize {
     self.queue_len.load(Ordering::Acquire)
   }
+
+  pub fn tasks_len(&self) -> usize {
+    self.tasks.len()
+  }
 }
 
 impl MITWorkersInner {
@@ -399,9 +403,9 @@ async fn worker_socket(socket: WebSocket, data: Arc<MITWorkerData>) {
 
           data.notify.notify_one();
         } else {
-          _ = tx.send(TaskWatchMessage::Error(false));
-
           data.tasks.remove(&task_id);
+
+          _ = tx.send(TaskWatchMessage::Error(false));
         }
 
         if let AppError::AxumError(_) = err {

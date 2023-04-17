@@ -18,10 +18,12 @@ async fn root() -> String {
 }
 
 async fn status_v1(State(mit_worker): State<MITWorkers>) -> Json<serde_json::Value> {
+  let mit_data = mit_worker.data();
   Json(json!({
     "version": env!("CARGO_PKG_VERSION"),
     "mit_worker": {
-      "queue": mit_worker.data().queue_len(),
+      "queue": mit_data.queue_len(),
+      "tasks": mit_data.tasks_len(),
     }
   }))
 }
