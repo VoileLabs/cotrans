@@ -116,7 +116,7 @@ function mount(): SettingsInjectorInstance {
         if (settingsTab && settingsTab.children.length < 2) {
           settingsTab.style.backgroundColor = '#F7F9F9'
           const activeIndicator = document.createElement('div')
-          activeIndicator.className = tw`absolute z-10 inset-0 border-0 border-r-2 border-solid border-[#1D9Bf0] pointer-events-none`
+          activeIndicator.className = tw`absolute z-10 inset-0 border-y-0 border-l-0 border-r-2 border-solid border-[#1D9Bf0] pointer-events-none`
           settingsTab.appendChild(activeIndicator)
         }
         checkSettings()

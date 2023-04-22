@@ -273,7 +273,7 @@ function mount(): TranslatorInstance {
     const spinnerContainer = container.firstChild!
     const disposeProcessingSpinner = render(() => (
       <Show when={isProcessing()}>
-        <div class={tw`absolute inset-0 border-1 border-transparent border-t-gray-400 rounded-full animate-spin`} />
+        <div class={tw`absolute inset-0 border-1 border-solid border-x-transparent border-b-transparent border-t-gray-400 rounded-full animate-spin`} />
       </Show>
     ), spinnerContainer)
     onCleanup(disposeProcessingSpinner)
@@ -373,7 +373,7 @@ function mount(): TranslatorInstance {
                       <div>{title()}</div>
                       <div class={tw`relative px-1`}>
                         <select
-                          class={tw`w-full py-1 appearance-none text-white border-0 border-b border-gray-300 bg-transparent`}
+                          class={tw`w-full py-1 appearance-none text-white border-x-0 border-t-0 border-b border-solid border-gray-300 bg-transparent`}
                           value={opt()}
                           onChange={(e) => {
                             // @ts-expect-error setOpt are incompatible with each other

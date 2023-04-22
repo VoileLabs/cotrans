@@ -1,7 +1,5 @@
 FROM messense/rust-musl-cross:x86_64-musl as build
 
-RUN rustup update
-
 RUN sed -i -E -e 's/http:\/\/(archive|security)\.ubuntu\.com\/ubuntu\//mirror:\/\/mirrors\.ubuntu\.com\/mirrors\.txt/' /etc/apt/sources.list
 RUN apt-get update && apt-get install -y protobuf-compiler && apt-get clean && rm -rf /var/lib/apt/lists/*
 

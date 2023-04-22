@@ -4,7 +4,7 @@ members = ["gateway", "prisma-cli", "proto-rs"]
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.69.0"
+rust-version = "1.68.2"
 
 [profile.release]
 lto = true

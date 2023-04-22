@@ -195,9 +195,10 @@ function mount(): TranslatorInstance {
                 }}
               />
               <div
-                class={tw`absolute inset-0 border-1 border-solid border-gray-300 rounded-full pointer-events-none`}
+                class={tw`absolute inset-0 border-1 border-solid rounded-full pointer-events-none`}
                 classList={{
-                  [tw`border-t-gray-600 animate-spin`]: processing(),
+                  [tw`border-x-gray-300 border-b-gray-300 border-t-gray-600 animate-spin`]: processing(),
+                  [tw`border-gray-300`]: !processing(),
                 }}
               />
             </div>
@@ -249,7 +250,7 @@ function mount(): TranslatorInstance {
                           <div>{title()}</div>
                           <div class={tw`relative px-1`}>
                             <select
-                              class={tw`w-full py-1 appearance-none text-black border-0 border-b border-gray-600 bg-transparent`}
+                              class={tw`w-full py-1 appearance-none text-black border-x-0 border-t-0 border-b border-solid border-gray-600 bg-transparent`}
                               value={opt()}
                               onChange={(e) => {
                                 // @ts-expect-error setOpt are incompatible with each other
