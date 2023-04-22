@@ -76,5 +76,6 @@ settings:
     includes the translation state of an image, that is, whether the image is
     translated or not, and the translation result. Keeping more translation
     instances will result in more memory consumption.
+  force-retry: Force retry (ignore cache)
 sponsor:
   text: If you find this script helpful, please consider supporting us!

@@ -8,11 +8,11 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@iconify-json/ri": "^1.1.7",
-    "@unocss/nuxt": "^0.51.4",
+    "@iconify-json/ri": "^1.1.8",
+    "@unocss/nuxt": "^0.51.5",
     "@vueuse/core": "^10.0.2",
     "@vueuse/nuxt": "^10.0.2",
-    "nuxt": "^3.4.1",
-    "nuxt-headlessui": "^1.1.1"
+    "nuxt": "^3.4.2",
+    "nuxt-headlessui": "^1.1.4"
   }
 }

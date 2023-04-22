@@ -86,4 +86,5 @@ export const storageReady = Promise.all([
   renderTextOrientation.ready,
   targetLang.ready,
   scriptLang.ready,
+  keepInstances.ready,
 ])

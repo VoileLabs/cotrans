@@ -9,9 +9,9 @@ publish = false
 
 [dependencies.prisma-client-rust-cli]
 git = "https://github.com/Brendonovich/prisma-client-rust"
-tag = "0.6.7"
+tag = "0.6.8"
 default-features = false
 features = ["postgresql"]
 
 [target.x86_64-unknown-linux-musl.dependencies]
-openssl = { version = "0.10.50", features = ["vendored"] }
+openssl = { version = "0.10.51", features = ["vendored"] }

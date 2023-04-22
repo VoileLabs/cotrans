@@ -64,6 +64,7 @@ export interface TranslateOptionsOverwrite {
   renderTextOrientation?: string
   textDetector?: string
   translator?: string
+  forceRetry?: boolean
 }
 export async function submitTranslate(
   blob: Blob,
@@ -80,13 +81,13 @@ export async function submitTranslate(
   const { onProgress } = listeners
 
   const formData = new FormData()
-  formData.append('retry', 'false')
   formData.append('file', blob, `image.${suffix}`)
   formData.append('target_language', targetLang() || BCP47ToISO639(realLang()))
   formData.append('detector', optionsOverwrite?.textDetector ?? textDetector())
   formData.append('direction', optionsOverwrite?.renderTextOrientation ?? renderTextOrientation())
   formData.append('translator', optionsOverwrite?.translator ?? translatorService())
   formData.append('size', optionsOverwrite?.detectionResolution ?? detectionResolution())
+  formData.append('retry', optionsOverwrite?.forceRetry ? 'true' : 'false')
 
   const result = await GMP.xmlHttpRequest({
     method: 'POST',

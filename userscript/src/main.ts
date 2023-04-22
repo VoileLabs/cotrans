@@ -1,8 +1,9 @@
+import './prefight'
+
 import { throttle } from '@solid-primitives/scheduled'
 import { createRoot } from 'solid-js'
 import { DelegatedEvents } from 'solid-js/web'
 import { changeLangEl } from './i18n'
-import { checkCSS } from './style'
 import { storageReady } from './utils/storage'
 
 // https://github.com/solidjs/solid/issues/334#issuecomment-773807937
@@ -54,9 +55,6 @@ export async function start(translators: Translator[], settingsInjectors: Settin
       currentURL = location.href
 
       // there is a navigation in the page
-
-      // ensure css is loaded
-      checkCSS()
 
       // update i18n element
       changeLangEl(document.documentElement as HTMLHtmlElement)

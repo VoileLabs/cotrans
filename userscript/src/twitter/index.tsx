@@ -4,6 +4,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { For, Match, Show, Switch, createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { Dynamic, render } from 'solid-js/web'
+import { tw } from 'twind'
 import { t } from '../i18n'
 import type { Translator, TranslatorInstance } from '../main'
 import { detectResOptions, detectResOptionsMap, renderTextDirOptions, renderTextDirOptionsMap, textDetectorOptions, textDetectorOptionsMap, translatorOptions, translatorOptionsMap } from '../settings'
@@ -20,6 +21,7 @@ import IconCarbonTranslate from '~icons/carbon/translate'
 import IconCarbonReset from '~icons/carbon/reset'
 import IconCarbonChevronRight from '~icons/carbon/chevron-right'
 import IconCarbonChevronLeft from '~icons/carbon/chevron-left'
+import IconCarbonChevronDown from '~icons/carbon/chevron-down'
 
 function mount(): TranslatorInstance {
   const mountAuthorId = location.pathname.split('/', 2)[1]
@@ -247,7 +249,6 @@ function mount(): TranslatorInstance {
       return img && !translateStatusMap[img]?.()
     }
     container.onclick = (e) => {
-      e.preventDefault()
       e.stopPropagation()
 
       // prevent misclick
@@ -272,16 +273,7 @@ function mount(): TranslatorInstance {
     const spinnerContainer = container.firstChild!
     const disposeProcessingSpinner = render(() => (
       <Show when={isProcessing()}>
-        <div style={{
-          'position': 'absolute',
-          'top': '0',
-          'left': '0',
-          'bottom': '0',
-          'right': '0',
-          'border-top': '1px solid #A1A1AA',
-          'border-radius': '9999px',
-          'animation': 'imgtrans-spin 1s linear infinite',
-        }} />
+        <div class={tw`absolute inset-0 border-1 border-transparent border-t-gray-400 rounded-full animate-spin`} />
       </Show>
     ), spinnerContainer)
     onCleanup(disposeProcessingSpinner)
@@ -294,11 +286,7 @@ function mount(): TranslatorInstance {
     const disposeButtonIcon = render(() => (
       <Dynamic
         component={isEnabled() ? IconCarbonReset : IconCarbonTranslate}
-        style={{
-          'width': '20px',
-          'height': '20px',
-          'margin-top': '4px',
-        }}
+        class={tw`w-5 h-5 mt-1`}
       />
     ), buttonIconContainer)
     onCleanup(disposeButtonIcon)
@@ -308,16 +296,11 @@ function mount(): TranslatorInstance {
     const disposeButtonStatus = render(() => {
       const status = createMemo(() => transStatus())
 
-      const borderRadius = createMemo(() => (advancedMenuOpen() || transStatus()) ? '4px' : '16px')
-
       const [advDetectRes, setAdvDetectRes] = createSignal(detectionResolution())
-      const advDetectResIndex = createMemo(() => detectResOptions.indexOf(advDetectRes()))
       const [advRenderTextDir, setAdvRenderTextDir] = createSignal(renderTextOrientation())
-      const advRenderTextDirIndex = createMemo(() => renderTextDirOptions.indexOf(advRenderTextDir()))
       const [advTextDetector, setAdvTextDetector] = createSignal(textDetector())
-      const advTextDetectorIndex = createMemo(() => textDetectorOptions.indexOf(advTextDetector()))
       const [advTranslator, setAdvTranslator] = createSignal(translatorService())
-      const advTranslatorIndex = createMemo(() => translatorOptions.indexOf(advTranslator()))
+      const [forceRetry, setForceRetry] = createSignal(false)
 
       createEffect((prev) => {
         const img = currentImg()
@@ -329,17 +312,13 @@ function mount(): TranslatorInstance {
       })
 
       return (
-        <div style={{
-          'margin-right': '-12px',
-          'padding': '2px 8px 2px 4px',
-          'color': '#fff',
-          'background-color': backgroundColor(),
-          'border-radius': `${borderRadius()} 4px 4px ${borderRadius()}`,
-          'cursor': 'default',
-        }}>
+        <div
+          class={tw`flex flex-col -mr-3 pl-1 pr-2 text-white rounded-2xl cursor-default`}
+          style={{ 'background-color': backgroundColor() }}
+        >
           <Switch>
             <Match when={status()}>
-              <div style={{ 'padding-right': '8px' }}>
+              <div class={tw`px-2 py-1`}>
                 {status()}
               </div>
             </Match>
@@ -348,14 +327,9 @@ function mount(): TranslatorInstance {
                 when={advancedMenuOpen()}
                 fallback={(
                   <IconCarbonChevronLeft
-                    style={{
-                      'vertical-align': 'middle',
-                      'padding-bottom': '3px',
-                      'cursor': 'pointer',
-                    }}
+                    class={tw`py-1 align-middle cursor-pointer`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      e.preventDefault()
 
                       setAdvancedMenuOpen(true)
                     }}
@@ -363,138 +337,92 @@ function mount(): TranslatorInstance {
                 )}
               >
                 <div
-                  style={{
-                    'display': 'flex',
-                    'flex-direction': 'row',
-                    'align-items': 'center',
-                    'padding-right': '8px',
-                    'padding-bottom': '2px',
-                  }}
+                  class={tw`flex justify-between items-center pl-2 py-1`}
                   onClick={(e) => {
                     e.stopPropagation()
-                    e.preventDefault()
 
                     setAdvancedMenuOpen(false)
                   }}
                 >
-                  <IconCarbonChevronRight
-                    style={{
-                      'vertical-align': 'middle',
-                      'cursor': 'pointer',
-                    }}
-                  />
-                  <div>{t('settings.inline-options-title')()}</div>
+                  <div class={tw`text-lg`}>{t('settings.inline-options-title')()}</div>
+                  <IconCarbonChevronRight class={tw`align-middle cursor-pointer`} />
                 </div>
-                <div style={{
-                  'display': 'flex',
-                  'flex-direction': 'column',
-                  'gap': '4px',
-                  'margin-left': '18px',
-                }}>
+                <div class={tw`flex flex-col w-48 gap-2 ml-2`}>
                   <For
                     each={[
                       [t('settings.detection-resolution'),
-                        advDetectRes, setAdvDetectRes, advDetectResIndex,
+                        advDetectRes, setAdvDetectRes,
                         detectResOptions, detectResOptionsMap,
                       ] as const,
                       [t('settings.text-detector'),
-                        advTextDetector, setAdvTextDetector, advTextDetectorIndex,
+                        advTextDetector, setAdvTextDetector,
                         textDetectorOptions, textDetectorOptionsMap,
                       ] as const,
                       [t('settings.translator'),
-                        advTranslator, setAdvTranslator, advTranslatorIndex,
+                        advTranslator, setAdvTranslator,
                         translatorOptions, translatorOptionsMap,
                       ] as const,
                       [
                         t('settings.render-text-orientation'),
-                        advRenderTextDir, setAdvRenderTextDir, advRenderTextDirIndex,
+                        advRenderTextDir, setAdvRenderTextDir,
                         renderTextDirOptions, renderTextDirOptionsMap,
                       ] as const,
                     ]}
-                  >{([title, opt, setOpt, optIndex, opts, optMap]) => (
+                  >{([title, opt, setOpt, opts, optMap]) => (
                     <div>
-                      <div style={{ 'font-size': '12px' }}>{title()}</div>
-                      <div style={{
-                        'display': 'flex',
-                        'flex-direction': 'row',
-                        'justify-content': 'space-between',
-                        'align-items': 'center',
-                        'user-select': 'none',
-                      }}>
-                        <Show
-                          when={optIndex() > 0}
-                          fallback={<div style={{ width: '1.2em' }} />}
+                      <div>{title()}</div>
+                      <div class={tw`relative px-1`}>
+                        <select
+                          class={tw`w-full py-1 appearance-none text-white border-0 border-b border-gray-300 bg-transparent`}
+                          value={opt()}
+                          onChange={(e) => {
+                            // @ts-expect-error setOpt are incompatible with each other
+                            setOpt(e.target.value)
+                          }}
                         >
-                          <IconCarbonChevronLeft
-                            style={{
-                              width: '1.2em',
-                              cursor: 'pointer',
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              e.preventDefault()
-
-                              if (optIndex() <= 0)
-                                return
-                              // @ts-expect-error setOpt are incompatible with each other
-                              setOpt(opts[optIndex() - 1])
-                            }}
-                          />
-                        </Show>
-                        <div>{
-                          // @ts-expect-error optMap are incompatible with each other
-                          optMap[opt()]()
-                        }</div>
-                        <Show
-                          when={optIndex() < opts.length - 1}
-                          fallback={<div style={{ width: '1.2em' }} />}
-                        >
-                          <IconCarbonChevronRight
-                            style={{
-                              width: '1.2em',
-                              cursor: 'pointer',
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              e.preventDefault()
-
-                              if (optIndex() >= opts.length - 1)
-                                return
-                              // @ts-expect-error setOpt are incompatible with each other
-                              setOpt(opts[optIndex() + 1])
-                            }}
-                          />
-                        </Show>
+                          <For each={opts}>{opt => (
+                            <option value={opt}>{
+                              // @ts-expect-error optMap are incompatible with each other
+                              optMap[opt]()
+                            }</option>
+                          )}</For>
+                        </select>
+                        <IconCarbonChevronDown class={tw`absolute top-1 right-1 pointer-events-none`} />
                       </div>
                     </div>
                   )}</For>
-                  <div
-                    style={{
-                      'padding': '2px 0px 1px 0px',
-                      'border': '1px solid #A1A1AA',
-                      'border-radius': '2px',
-                      'text-align': 'center',
-                      'cursor': 'pointer',
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      e.preventDefault()
+                  <label class={tw`flex items-center cursor-pointer`}>
+                    <input
+                      type="checkbox"
+                      checked={/* @once */ forceRetry()}
+                      onChange={(e) => {
+                        setForceRetry(e.target.checked)
+                      }}
+                    />
+                    {t('settings.force-retry')()}
+                  </label>
+                </div>
+                <div
+                  class={tw`w-full mt-2 mb-1 py-1 border border-solid border-white rounded-full text-center cursor-pointer`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
 
-                      if (!submitTranslateTest())
-                        return
-                      if (translateEnabledMap[currentImg()!])
-                        return
-                      enable(currentImg()!, {
-                        detectionResolution: advDetectRes(),
-                        renderTextOrientation: advRenderTextDir(),
-                        textDetector: advTextDetector(),
-                        translator: advTranslator(),
-                      })
-                      setAdvancedMenuOpen(false)
-                    }}
-                  >
-                    {t('common.control.translate')()}
-                  </div>
+                    if (!submitTranslateTest())
+                      return
+                    if (translateEnabledMap[currentImg()!])
+                      return
+                    enable(currentImg()!, {
+                      detectionResolution: advDetectRes(),
+                      renderTextOrientation: advRenderTextDir(),
+                      textDetector: advTextDetector(),
+                      translator: advTranslator(),
+                      forceRetry: forceRetry(),
+                    })
+                    setAdvancedMenuOpen(false)
+                  }}
+                >
+                  {t('common.control.translate')()}
                 </div>
               </Show>
             </Match>

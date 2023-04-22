@@ -2,6 +2,7 @@ import { createMutationObserver } from '@solid-primitives/mutation-observer'
 import { throttle } from '@solid-primitives/scheduled'
 import { onCleanup } from 'solid-js'
 import { render } from 'solid-js/web'
+import { tw } from 'twind'
 import { t } from '../i18n'
 import type { SettingsInjector, SettingsInjectorInstance } from '../main'
 import { Settings } from '../settings'
@@ -78,19 +79,10 @@ function mount(): SettingsInjectorInstance {
       })
 
       return (
-        <div style={{
-          'padding-left': '16px',
-          'padding-right': '16px',
-        }}>
-          <div style={{
-            'display': 'flex',
-            'height': '53px',
-            'align-items': 'center',
-          }}>
-            <h2 style={{
-              'font-size': '20px',
-              'line-height': '24px',
-            }}>
+        // r-37j5jr: twitter font
+        <div class={tw`px-4 r-37j5jr`}>
+          <div class={tw`flex items-center h-14`}>
+            <h2 class={tw`text-xl leading-6`}>
               {t('settings.title')()}
             </h2>
           </div>
@@ -124,14 +116,7 @@ function mount(): SettingsInjectorInstance {
         if (settingsTab && settingsTab.children.length < 2) {
           settingsTab.style.backgroundColor = '#F7F9F9'
           const activeIndicator = document.createElement('div')
-          activeIndicator.style.position = 'absolute'
-          activeIndicator.style.zIndex = '1'
-          activeIndicator.style.top = '0'
-          activeIndicator.style.left = '0'
-          activeIndicator.style.bottom = '0'
-          activeIndicator.style.right = '0'
-          activeIndicator.style.borderRight = '2px solid #1D9Bf0'
-          activeIndicator.style.pointerEvents = 'none'
+          activeIndicator.className = tw`absolute z-10 inset-0 border-0 border-r-2 border-solid border-[#1D9Bf0] pointer-events-none`
           settingsTab.appendChild(activeIndicator)
         }
         checkSettings()

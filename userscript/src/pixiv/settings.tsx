@@ -1,5 +1,6 @@
 import { onCleanup } from 'solid-js'
 import { render } from 'solid-js/web'
+import { tw } from 'twind'
 import { t } from '../i18n'
 import type { SettingsInjector, SettingsInjectorInstance } from '../main'
 import { Settings } from '../settings'
@@ -19,22 +20,11 @@ function mount(): SettingsInjectorInstance {
   })
 
   const disposeSettings = render(() => (
-    <div style={{
-      'padding': '10px 20px 15px',
-      'margin-bottom': '10px',
-      'background': '#fff',
-      'border': '1px solid #d6dee5',
-    }}>
-      <h2 style={{
-        'font-size': '18px',
-        'font-weight': 'bold',
-      }}>
+    <div class={tw`mb-2.5 pt-2.5 px-5 pb-4 bg-white border border-solid border-[#d6dee5]`}>
+      <h2 class={tw`text-lg font-bold`}>
         {t('settings.title')()}
       </h2>
-      <div style={{
-        width: '665px',
-        margin: '10px auto',
-      }}>
+      <div class={tw`w-[665px] my-2.5 mx-auto`}>
         <Settings
           itemOrientation="horizontal"
           textStyle={{

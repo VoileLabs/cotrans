@@ -1,5 +1,6 @@
 import type { Accessor, Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
+import { tw } from 'twind'
 import { t } from '../i18n'
 import {
   detectionResolution,
@@ -106,14 +107,11 @@ export const Settings: Component<{
   itemOrientation?: 'vertical' | 'horizontal'
   textStyle?: JSX.HTMLAttributes<HTMLDivElement>['style']
 }> = (props) => {
-  const { itemOrientation = 'vertical', textStyle = {} } = props
+  const itemOrientation = () => props.itemOrientation ?? 'vertical'
+  const textStyle = () => props.textStyle ?? {}
 
   return (
-    <div style={{
-      'display': 'flex',
-      'flex-direction': 'column',
-      'gap': '8px',
-    }}>
+    <div class={tw`flex flex-col gap-2`}>
       {/* Meta */}
       <div>{EDITION} edition, v{VERSION}</div>
       {/* Sponsor */}
@@ -132,10 +130,7 @@ export const Settings: Component<{
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                'color': '#2563EB',
-                'text-decoration': 'none',
-              }}
+              class={tw`no-underline text-blue-600`}
             >{name}</a>
           </>
         )}</For>
@@ -178,16 +173,8 @@ export const Settings: Component<{
           t('settings.keep-instances-desc'),
         ] as const,
       ]}>{([title, opt, setOpt, optMap, desc]) => (
-        <div
-          style={itemOrientation === 'horizontal'
-            ? {
-                'display': 'flex',
-                'flex-direction': 'row',
-                'align-items': 'center',
-              }
-            : {}}
-        >
-          <div style={textStyle}>{title()}</div>
+        <div class={itemOrientation() === 'horizontal' ? tw`flex items-center` : ''}>
+          <div style={textStyle()}>{title()}</div>
           <div>
             <select
               value={opt()}
@@ -199,7 +186,7 @@ export const Settings: Component<{
               ))}
             </select>
             <Show when={desc()}>
-              <div style={{ 'font-size': '13px' }}>{desc()}</div>
+              <div class={tw`text-sm`}>{desc()}</div>
             </Show>
           </div>
         </div>

@@ -36,7 +36,7 @@ use crate::{
   AppState, Database, MITWorkers, R2Client,
 };
 
-pub static WORKER_REVISION: i32 = 1;
+pub static WORKER_REVISION: i32 = 2;
 pub static QUEUE_LIMIT: usize = 60;
 
 #[derive(Debug, Clone)]
@@ -280,10 +280,7 @@ async fn worker_ws(
         secret.as_bytes(),
         mit_workers.secret.as_bytes(),
       )
-      .is_ok() =>
-    {
-      ()
-    }
+      .is_ok() => {}
     _ => return StatusCode::FORBIDDEN.into_response(),
   }
 

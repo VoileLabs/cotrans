@@ -72,5 +72,6 @@ settings:
   keep-instances-desc: >-
     设置翻译进度的保留时间。 翻译进度即图片的翻译状态和翻译结果。
     保留更多的翻译进度会占用更多的内存。
+  force-retry: 强制重试 (忽略缓存)
 sponsor:
   text: 制作不易，请考虑赞助我们！
