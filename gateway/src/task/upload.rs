@@ -6,7 +6,11 @@ use axum::{
   routing::put,
   Json, Router,
 };
-use image::{io::Reader as ImageReader, ImageFormat, ImageOutputFormat};
+use image::{
+  codecs::png::{CompressionType, FilterType, PngEncoder},
+  io::Reader as ImageReader,
+  ImageEncoder, ImageFormat,
+};
 use serde::{Deserialize, Serialize};
 use tokio::task::spawn_blocking;
 
@@ -195,7 +199,12 @@ async fn upload_create_v1(
     let hash = images::hash(&image);
 
     let mut png_buf: Vec<u8> = vec![];
-    image.write_to(&mut Cursor::new(&mut png_buf), ImageOutputFormat::Png)?;
+    PngEncoder::new_with_quality(
+      &mut Cursor::new(&mut png_buf),
+      CompressionType::Best,
+      FilterType::default(),
+    )
+    .write_image(image.as_bytes(), width, height, image.color())?;
     let png = Bytes::from(png_buf);
 
     let sha = sha256(&png);

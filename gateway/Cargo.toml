@@ -40,7 +40,7 @@ tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["full"] }
 reqwest = { version = "0.11.16", features = ["brotli", "gzip", "deflate"] }
 prost = "0.11.9"
-metrics = "0.21.0"
+metrics = "0.20.1"
 metrics-exporter-prometheus = "0.11.0"
 axum-prometheus = "0.3.2"
 
