@@ -32,8 +32,8 @@ export type DetectResOption = keyof typeof detectResOptionsMap
 
 export const renderTextDirOptionsMap = {
   auto: t('settings.render-text-orientation-options.auto'),
-  horizontal: t('settings.render-text-orientation-options.horizontal'),
-  vertical: t('settings.render-text-orientation-options.vertical'),
+  h: t('settings.render-text-orientation-options.horizontal'),
+  v: t('settings.render-text-orientation-options.vertical'),
 } satisfies OptionsMap
 export const renderTextDirOptions = Object.keys(renderTextDirOptionsMap)
 export type RenderTextDirOption = keyof typeof renderTextDirOptionsMap

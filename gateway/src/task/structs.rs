@@ -390,6 +390,8 @@ impl FromStr for Direction {
       "auto" => Ok(Direction::Auto),
       "h" => Ok(Direction::Horizontal),
       "v" => Ok(Direction::Vertical),
+      "horizontal" => Ok(Direction::Horizontal),
+      "vertical" => Ok(Direction::Vertical),
       _ => Err(InvalidDirectionError(s.to_string())),
     }
   }

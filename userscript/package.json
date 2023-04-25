@@ -1,7 +1,7 @@
 {
   "name": "imgtrans-userscript",
   "type": "module",
-  "version": "0.8.0-bata.9",
+  "version": "0.8.0-bata.10",
   "private": true,
   "scripts": {
     "build": "rollup -c",
@@ -25,16 +25,16 @@
     "@rollup/plugin-commonjs": "^24.1.0",
     "@rollup/plugin-node-resolve": "^15.0.2",
     "@rollup/plugin-yaml": "^4.0.1",
-    "@types/node": "^18.15.13",
+    "@types/node": "^18.16.0",
     "@types/tampermonkey": "^4.0.10",
     "babel-preset-solid": "^1.7.3",
-    "esbuild": "^0.17.17",
+    "esbuild": "^0.17.18",
     "fast-glob": "^3.2.12",
     "happy-dom": "^9.9.2",
     "magic-string": "^0.30.0",
     "resolve": "^1.22.2",
     "rimraf": "^5.0.0",
-    "rollup": "^3.20.7",
+    "rollup": "^3.21.0",
     "rollup-plugin-esbuild": "^5.0.0",
     "unplugin-icons": "^0.16.1",
     "vitest": "^0.30.1"
