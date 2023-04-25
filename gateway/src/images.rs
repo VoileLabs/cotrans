@@ -1,27 +1,8 @@
-use std::io::Cursor;
-
 use axum::body::Bytes;
-use image::{io::Reader as ImageReader, DynamicImage, ImageError, ImageFormat};
+use image::DynamicImage;
 use image_hasher::{FilterType, Hasher, HasherConfig};
 use once_cell::sync::Lazy;
 use ring::digest;
-
-use crate::{error::AppResult, r2::R2Bucket};
-
-pub fn load_bytes(bytes: &Bytes) -> Result<DynamicImage, ImageError> {
-  ImageReader::with_format(Cursor::new(bytes), ImageFormat::Png).decode()
-}
-
-pub fn load_bytes_guessed(bytes: &Bytes) -> Result<DynamicImage, ImageError> {
-  ImageReader::new(Cursor::new(bytes))
-    .with_guessed_format()?
-    .decode()
-}
-
-pub async fn load_r2(key: &str, bucket: &R2Bucket) -> AppResult<DynamicImage> {
-  let bytes = bucket.get(key).await?;
-  Ok(load_bytes(&bytes)?)
-}
 
 static HASHER: Lazy<Hasher> = Lazy::new(|| {
   HasherConfig::new()

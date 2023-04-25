@@ -16,16 +16,12 @@ use crate::{
 };
 
 use super::{
-  // pixiv,
-  // twitter,
   upload,
   TaskResult,
 };
 
 pub fn router() -> Router<AppState> {
   Router::new()
-    // .nest("/twitter", twitter::router())
-    // .nest("/pixiv", pixiv::router())
     .nest("/upload", upload::router())
     .route("/:id/status/v1", get(task_status_v1))
     .route("/:id/event/v1", get(task_query_v1))

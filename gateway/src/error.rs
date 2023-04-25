@@ -12,8 +12,6 @@ use thiserror::Error;
 use tokio::task::JoinError;
 
 use crate::{task::{
-  pixiv::scrape::{ParsePixivArtworkAjaxError, ParsePixivArtworkPagesAjaxError},
-  twitter::scrape::ParseTwitterTweetError,
   DirectionIntoDBError, InvalidDetectorError, InvalidDirectionError, InvalidLanguageError,
   InvalidSizeError, InvalidTranslatorError,
 }, mit_worker::QueueFullError};
@@ -28,7 +26,6 @@ pub enum AppError {
   QuickXMLError(quick_xml::Error),
   TokioJoinError(JoinError),
   TokioBroadcastRecvError(tokio::sync::broadcast::error::RecvError),
-  ParseTweetError(ParseTwitterTweetError),
   ImageError(ImageError),
   AxumError(axum::Error),
   ProtoDecodeError(prost::DecodeError),
@@ -36,8 +33,6 @@ pub enum AppError {
   MultipartError(MultipartError),
   SerdeJSONError(serde_json::Error),
   TokioWatchRecvError(tokio::sync::watch::error::RecvError),
-  ParsePixivArtworkAjaxError(ParsePixivArtworkAjaxError),
-  ParsePixivArtworkPagesAjaxError(ParsePixivArtworkPagesAjaxError),
 
   DirectionIntoDBError(DirectionIntoDBError),
   InvalidDirectionError(InvalidDirectionError),
@@ -79,12 +74,6 @@ impl From<JoinError> for AppError {
 impl From<tokio::sync::broadcast::error::RecvError> for AppError {
   fn from(error: tokio::sync::broadcast::error::RecvError) -> Self {
     AppError::TokioBroadcastRecvError(error)
-  }
-}
-
-impl From<ParseTwitterTweetError> for AppError {
-  fn from(error: ParseTwitterTweetError) -> Self {
-    AppError::ParseTweetError(error)
   }
 }
 
@@ -172,18 +161,6 @@ impl From<tokio::sync::watch::error::RecvError> for AppError {
   }
 }
 
-impl From<ParsePixivArtworkAjaxError> for AppError {
-  fn from(error: ParsePixivArtworkAjaxError) -> Self {
-    AppError::ParsePixivArtworkAjaxError(error)
-  }
-}
-
-impl From<ParsePixivArtworkPagesAjaxError> for AppError {
-  fn from(error: ParsePixivArtworkPagesAjaxError) -> Self {
-    AppError::ParsePixivArtworkPagesAjaxError(error)
-  }
-}
-
 impl fmt::Display for AppError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     let id = cuid::cuid().unwrap();
@@ -204,7 +181,6 @@ impl IntoResponse for AppError {
       AppError::QuickXMLError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::TokioJoinError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::TokioBroadcastRecvError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-      AppError::ParseTweetError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::ImageError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::AxumError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::ProtoDecodeError(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -212,8 +188,6 @@ impl IntoResponse for AppError {
       AppError::MultipartError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::SerdeJSONError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::TokioWatchRecvError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-      AppError::ParsePixivArtworkAjaxError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-      AppError::ParsePixivArtworkPagesAjaxError(_) => StatusCode::INTERNAL_SERVER_ERROR,
 
       AppError::DirectionIntoDBError(_) => StatusCode::INTERNAL_SERVER_ERROR,
       AppError::InvalidDirectionError(_) => StatusCode::BAD_REQUEST,

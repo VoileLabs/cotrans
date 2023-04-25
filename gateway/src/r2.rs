@@ -137,18 +137,10 @@ pub struct R2Range {
   pub suffix: Option<u32>,
 }
 
-pub fn tweet_image_key(tweet_id: &str, image_id: &str) -> String {
-  format!("twitter/{tweet_id}/{image_id}.png")
-}
-
 pub fn upload_image_key(sha: &str) -> String {
   format!("upload/{sha}.png")
 }
 
 pub fn translation_mask_key(task_id: &str) -> String {
   format!("mask/{task_id}.png")
-}
-
-pub fn pixiv_image_key(artwork_id: i64, page: i32) -> String {
-  format!("pixiv/{artwork_id}/{page}.png")
 }
