@@ -24,9 +24,16 @@ export default defineNuxtConfig({
   },
 
   unocss: {
-    uno: true,
-    icons: true,
     preflight: true,
+    uno: true,
+    icons: {
+      scale: 1.2,
+      extraProperties: {
+        'color': 'inherit',
+        // Avoid crushing of icons in crowded situations
+        'min-width': '1.2em',
+      },
+    },
     webFonts: {
       provider: 'google',
       fonts: {

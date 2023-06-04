@@ -19,7 +19,7 @@ use crate::{
   images::{self, sha256},
   prisma, r2,
   task::{TaskParam, TaskResult},
-  AppState, Database, MITWorkers, R2Client,
+  AppState, Database, MITWorkers, R2Client, mit_worker::{QUEUE_LIMIT, QueueFullError},
 };
 
 use super::{db, DBTaskParam, Detector, Direction, Language, Size, TaskState, Translator};
@@ -242,6 +242,10 @@ async fn upload_create_v1(
     .await?;
 
   let db_param: DBTaskParam = payload.param.into();
+
+  if mit_workers.data().queue_len() >= QUEUE_LIMIT {
+    return Err(QueueFullError().into());
+  }
 
   let db_task = db::upsert_task(&db, &source.id, db_param, retry).await?;
 

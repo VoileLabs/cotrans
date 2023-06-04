@@ -1,4 +1,5 @@
 use axum::{extract::State, routing::get, Json, Router};
+use build_time::build_time_utc;
 use metrics_exporter_prometheus::PrometheusHandle;
 use serde_json::json;
 
@@ -21,6 +22,7 @@ async fn status_v1(State(mit_worker): State<MITWorkers>) -> Json<serde_json::Val
   let mit_data = mit_worker.data();
   Json(json!({
     "version": env!("CARGO_PKG_VERSION"),
+    "build_time": build_time_utc!(),
     "mit_worker": {
       "queue": mit_data.queue_len(),
       "tasks": mit_data.tasks_len(),

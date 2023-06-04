@@ -409,6 +409,8 @@ pub enum Translator {
   DeepL,
   #[serde(rename = "papago")]
   Papago,
+  #[serde(rename = "gpt3.5")]
+  GPT3_5,
   #[serde(rename = "offline")]
   Offline,
   #[serde(rename = "none")]
@@ -425,6 +427,7 @@ impl From<prisma::Translator> for Translator {
       prisma::Translator::Google => Translator::Google,
       prisma::Translator::Deepl => Translator::DeepL,
       prisma::Translator::Papago => Translator::Papago,
+      prisma::Translator::Gpt35 => Translator::GPT3_5,
       prisma::Translator::Offline => Translator::Offline,
       prisma::Translator::None => Translator::None,
       prisma::Translator::Original => Translator::Original,
@@ -440,6 +443,7 @@ impl From<Translator> for prisma::Translator {
       Translator::Google => prisma::Translator::Google,
       Translator::DeepL => prisma::Translator::Deepl,
       Translator::Papago => prisma::Translator::Papago,
+      Translator::GPT3_5 => prisma::Translator::Gpt35,
       Translator::Offline => prisma::Translator::Offline,
       Translator::None => prisma::Translator::None,
       Translator::Original => prisma::Translator::Original,
@@ -455,6 +459,7 @@ impl fmt::Display for Translator {
       Translator::Google => write!(f, "google"),
       Translator::DeepL => write!(f, "deepl"),
       Translator::Papago => write!(f, "papago"),
+      Translator::GPT3_5 => write!(f, "gpt3.5"),
       Translator::Offline => write!(f, "offline"),
       Translator::None => write!(f, "none"),
       Translator::Original => write!(f, "original"),
@@ -476,6 +481,7 @@ impl FromStr for Translator {
       "google" => Ok(Translator::Google),
       "deepl" => Ok(Translator::DeepL),
       "papago" => Ok(Translator::Papago),
+      "gpt3.5" => Ok(Translator::GPT3_5),
       "offline" => Ok(Translator::Offline),
       "none" => Ok(Translator::None),
       "original" => Ok(Translator::Original),

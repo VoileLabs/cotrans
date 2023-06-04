@@ -24,7 +24,10 @@ watch(diaOpen, () => {
 }, { flush: 'pre' })
 
 const optionsTop = computed(() => rootPos.top.value + rootPos.height.value)
+const optionsBottom = computed(() => window.innerHeight - rootPos.top.value)
 const optionsLeft = computed(() => rootPos.left.value)
+const optionsHeight = computed(() => Math.min(window.innerHeight - optionsTop.value - 16, 240))
+const toTop = computed(() => optionsHeight.value < 200 && optionsTop.value > (240 + rootPos.height.value))
 </script>
 
 <template>
@@ -49,20 +52,26 @@ const optionsLeft = computed(() => rootPos.left.value)
           ref="optionsEl"
           class="z-51 fixed -mx-1 py-2 px-1 rounded-md overflow-hidden"
           :style="{
-            top: `${optionsTop}px`,
+            top: toTop ? undefined : `${optionsTop}px`,
+            bottom: toTop ? `${optionsBottom}px` : undefined,
             left: `${optionsLeft}px`,
             width: `calc(${rootPos.width.value}px + 0.5rem)`,
           }"
         >
           <Transition
             enter-active-class="transition ease-out duration-85 transform"
-            enter-from-class="-translate-y-1/3 opacity-40"
+            :enter-from-class="`${toTop ? 'translate-y-1/3' : '-translate-y-1/3'} opacity-40`"
             enter-to-class="translate-y-0 opacity-100"
             leave-active-class="transition ease-out duration-85 transform"
             leave-from-class="translate-y-0 opacity-100"
-            leave-to-class="-translate-y-1/3 opacity-0"
+            :leave-to-class="`${toTop ? 'translate-y-1/3' : '-translate-y-1/3'} opacity-0`"
           >
-            <HListboxOptions class="focus:outline-none w-full max-h-60 rounded-md overflow-auto text-base shadow ring-1 ring-gray-300 ring-opacity-10 bg-white dark:bg-gray-800">
+            <HListboxOptions
+              class="focus:outline-none w-full rounded-md overflow-auto text-base shadow ring-1 ring-gray-300 ring-opacity-10 bg-white dark:bg-gray-800"
+              :style="{
+                maxHeight: toTop ? undefined : `${optionsHeight}px`,
+              }"
+            >
               <HListboxOption
                 v-for="(value, id) in items"
                 v-slot="{ active, selected }"

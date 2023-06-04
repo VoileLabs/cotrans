@@ -23,6 +23,9 @@ mod error;
 mod headers;
 mod images;
 mod mit_worker;
+#[allow(unknown_lints)]
+#[allow(clippy::all)]
+#[allow(warnings)]
 mod prisma;
 mod r2;
 mod routes;
@@ -43,6 +46,10 @@ pub struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+  let (axiom_layer, _axiom_guard) = tracing_axiom::builder()
+    .with_service_name("gateway-log")
+    .layer()?;
+
   // initialize tracing
   tracing_subscriber::registry()
     .with(tracing_subscriber::EnvFilter::new(
@@ -50,6 +57,7 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| "info,cotrans_gateway=debug,tower_http=debug".into()),
     ))
     .with(tracing_subscriber::fmt::layer())
+    .with(axiom_layer)
     .init();
 
   tracing::info!("starting cotrans gateway");
@@ -113,8 +121,8 @@ async fn main() -> Result<()> {
     "Duration of mit worker tasks"
   );
 
-  tracing::debug!("resuming mit workers tasks");
-  mit_workers.resume().await?;
+  // tracing::debug!("resuming mit workers tasks");
+  // mit_workers.resume().await?;
 
   let state = AppState {
     db,

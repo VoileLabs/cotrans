@@ -54,6 +54,7 @@ enum Translator {
   GOOGLE
   DEEPL
   PAPAGO
+  GPT3_5
   OFFLINE
   NONE
   ORIGINAL

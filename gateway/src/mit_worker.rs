@@ -23,6 +23,7 @@ use dashmap::DashMap;
 use futures::{Sink, SinkExt, Stream, StreamExt};
 use http::StatusCode;
 use metrics::{counter, decrement_gauge, gauge, histogram, increment_counter, increment_gauge};
+use prisma_client_rust::{not, or};
 use prost::Message;
 use thiserror::Error;
 use tokio::sync::{watch, Mutex, Notify};
@@ -37,7 +38,7 @@ use crate::{
 };
 
 pub static WORKER_REVISION: i32 = 2;
-pub static QUEUE_LIMIT: usize = 60;
+pub static QUEUE_LIMIT: usize = 40;
 
 #[derive(Debug, Clone)]
 pub enum TaskWatchMessage {
@@ -122,7 +123,13 @@ impl MITWorkersInner {
       .data
       .db
       .task()
-      .find_many(vec![prisma::task::worker_revision::equals(WORKER_REVISION)])
+      .find_many(vec![
+        prisma::task::worker_revision::equals(WORKER_REVISION),
+        not!(or![
+          prisma::task::state::equals(prisma::TaskState::Done),
+          prisma::task::state::equals(prisma::TaskState::Error),
+        ]),
+      ])
       .include(DBToTask::include())
       .exec()
       .await?;
@@ -454,7 +461,7 @@ where
   send_message(sender, web_socket_message::Message::NewTask(new_task)).await?;
 
   loop {
-    let msg = wait_or_recv(sender, receiver, Duration::from_secs(30)).await?;
+    let msg = wait_or_recv(sender, receiver, Duration::from_secs(20)).await?;
     match msg {
       web_socket_message::Message::Status(status) => {
         if status.id != *task.id() {

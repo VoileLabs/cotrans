@@ -46,19 +46,14 @@ export const textDetectorOptions = Object.keys(textDetectorOptionsMap)
 export type TextDetectorOption = keyof typeof textDetectorOptionsMap
 
 export const translatorOptionsMap = {
-  youdao: () => 'Youdao',
-  baidu: () => 'Baidu',
-  google: () => 'Google',
-  deepl: () => 'DeepL',
-  papago: () => 'Papago',
-  offline: () => 'Sugoi / NLLB',
-  none: t('settings.translator-options.none'),
-  // offline_big: () => 'Sugoi / NLLB (Big)',
-  // nnlb: () => 'NLLB',
-  // nnlb_big: () => 'NLLB (Big)',
-  // sugoi: () => 'Sugoi',
-  // sugoi_small: () => 'Sugoi (Small)',
-  // sugoi_big: () => 'Sugoi (Big)',
+  'youdao': () => 'Youdao',
+  'baidu': () => 'Baidu',
+  'google': () => 'Google',
+  'deepl': () => 'DeepL',
+  'papago': () => 'Papago',
+  'gpt3.5': () => 'GPT-3.5 (Experimental)',
+  'offline': () => 'Sugoi / NLLB',
+  'none': t('settings.translator-options.none'),
 } satisfies OptionsMap
 export const translatorOptions = Object.keys(translatorOptionsMap)
 export type TranslatorOption = keyof typeof translatorOptionsMap
