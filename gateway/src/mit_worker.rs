@@ -37,7 +37,7 @@ use crate::{
   AppState, Database, MITWorkers, R2Client,
 };
 
-pub static WORKER_REVISION: i32 = 2;
+pub static WORKER_REVISION: i32 = 3;
 pub static QUEUE_LIMIT: usize = 40;
 
 #[derive(Debug, Clone)]
