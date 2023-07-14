@@ -4,7 +4,7 @@ import type { Accessor, Setter } from 'solid-js'
 import { For, Match, Show, Switch, createEffect, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { Dynamic, render } from 'solid-js/web'
-import { tw } from 'twind'
+import { tw } from '../utils/twind'
 import { t } from '../i18n'
 import type { Translator, TranslatorInstance } from '../main'
 import { detectResOptions, detectResOptionsMap, renderTextDirOptions, renderTextDirOptionsMap, textDetectorOptions, textDetectorOptionsMap, translatorOptions, translatorOptionsMap } from '../settings'
@@ -273,7 +273,7 @@ function mount(): TranslatorInstance {
     const spinnerContainer = container.firstChild!
     const disposeProcessingSpinner = render(() => (
       <Show when={isProcessing()}>
-        <div class={tw`absolute inset-0 border-1 border-solid border-x-transparent border-b-transparent border-t-gray-400 rounded-full animate-spin`} />
+        <div class={tw('absolute inset-0 border-1 border-solid border-x-transparent border-b-transparent border-t-gray-400 rounded-full animate-spin')} />
       </Show>
     ), spinnerContainer)
     onCleanup(disposeProcessingSpinner)
@@ -286,7 +286,7 @@ function mount(): TranslatorInstance {
     const disposeButtonIcon = render(() => (
       <Dynamic
         component={isEnabled() ? IconCarbonReset : IconCarbonTranslate}
-        class={tw`w-5 h-5 mt-1`}
+        class={tw('w-5 h-5 mt-1')}
       />
     ), buttonIconContainer)
     onCleanup(disposeButtonIcon)
@@ -313,12 +313,12 @@ function mount(): TranslatorInstance {
 
       return (
         <div
-          class={tw`flex flex-col -mr-3 pl-1 pr-2 text-white rounded-2xl cursor-default`}
+          class={tw('flex flex-col -mr-3 pl-1 pr-2 text-white rounded-2xl cursor-default')}
           style={{ 'background-color': backgroundColor() }}
         >
           <Switch>
             <Match when={status()}>
-              <div class={tw`px-2 py-1`}>
+              <div class={tw('px-2 py-1')}>
                 {status()}
               </div>
             </Match>
@@ -327,7 +327,7 @@ function mount(): TranslatorInstance {
                 when={advancedMenuOpen()}
                 fallback={(
                   <IconCarbonChevronLeft
-                    class={tw`py-1 align-middle cursor-pointer`}
+                    class={tw('py-1 align-middle cursor-pointer')}
                     onClick={(e) => {
                       e.stopPropagation()
 
@@ -337,17 +337,17 @@ function mount(): TranslatorInstance {
                 )}
               >
                 <div
-                  class={tw`flex justify-between items-center pl-2 py-1`}
+                  class={tw('flex justify-between items-center pl-2 py-1')}
                   onClick={(e) => {
                     e.stopPropagation()
 
                     setAdvancedMenuOpen(false)
                   }}
                 >
-                  <div class={tw`text-lg`}>{t('settings.inline-options-title')()}</div>
-                  <IconCarbonChevronRight class={tw`align-middle cursor-pointer`} />
+                  <div class={tw('text-lg')}>{t('settings.inline-options-title')()}</div>
+                  <IconCarbonChevronRight class={tw('align-middle cursor-pointer')} />
                 </div>
-                <div class={tw`flex flex-col w-48 gap-2 ml-2`}>
+                <div class={tw('flex flex-col w-48 gap-2 ml-2')}>
                   <For
                     each={[
                       [t('settings.detection-resolution'),
@@ -371,9 +371,9 @@ function mount(): TranslatorInstance {
                   >{([title, opt, setOpt, opts, optMap]) => (
                     <div>
                       <div>{title()}</div>
-                      <div class={tw`relative px-1`}>
+                      <div class={tw('relative px-1')}>
                         <select
-                          class={tw`w-full py-1 appearance-none text-white border-x-0 border-t-0 border-b border-solid border-gray-300 bg-transparent`}
+                          class={tw('w-full py-1 appearance-none text-white border-x-0 border-t-0 border-b border-solid border-gray-300 bg-transparent')}
                           value={opt()}
                           onChange={(e) => {
                             // @ts-expect-error setOpt are incompatible with each other
@@ -387,11 +387,11 @@ function mount(): TranslatorInstance {
                             }</option>
                           )}</For>
                         </select>
-                        <IconCarbonChevronDown class={tw`absolute top-1 right-1 pointer-events-none`} />
+                        <IconCarbonChevronDown class={tw('absolute top-1 right-1 pointer-events-none')} />
                       </div>
                     </div>
                   )}</For>
-                  <label class={tw`flex items-center cursor-pointer`}>
+                  <label class={tw('flex items-center cursor-pointer')}>
                     <input
                       type="checkbox"
                       checked={/* @once */ forceRetry()}
@@ -403,7 +403,7 @@ function mount(): TranslatorInstance {
                   </label>
                 </div>
                 <div
-                  class={tw`w-full mt-2 mb-1 py-1 border border-solid border-white rounded-full text-center cursor-pointer`}
+                  class={tw('w-full mt-2 mb-1 py-1 border border-solid border-white rounded-full text-center cursor-pointer')}
                   onClick={(e) => {
                     e.stopPropagation()
                     e.preventDefault()

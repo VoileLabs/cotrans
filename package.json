@@ -4,8 +4,8 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^0.39.4",
-    "eslint": "^8.42.0",
-    "typescript": "^5.1.3"
+    "@antfu/eslint-config": "^0.39.7",
+    "eslint": "^8.45.0",
+    "typescript": "^5.1.6"
   }
 }

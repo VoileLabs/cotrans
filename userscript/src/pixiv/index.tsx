@@ -4,7 +4,7 @@ import { throttle } from '@solid-primitives/scheduled'
 import type { Accessor, Component } from 'solid-js'
 import { For, Show, createMemo, createRoot, createSignal, onCleanup } from 'solid-js'
 import { Dynamic, Match, Switch, render } from 'solid-js/web'
-import { tw } from 'twind'
+import { tw } from '../utils/twind'
 import { t } from '../i18n'
 import type { Translator, TranslatorInstance } from '../main'
 import {
@@ -144,10 +144,10 @@ function mount(): TranslatorInstance {
 
       return (
         <div
-          class={tw`absolute z-1 flex top-1 left-2 transition-opacity duration-80`}
+          class={tw('absolute z-1 flex top-1 left-2 transition-opacity duration-80')}
           classList={{
-            [tw`opacity-100`]: fullOpacity(),
-            [tw`opacity-30`]: !fullOpacity(),
+            [tw('opacity-100')]: fullOpacity(),
+            [tw('opacity-30')]: !fullOpacity(),
           }}
           onClick={(e) => {
             e.stopPropagation()
@@ -171,10 +171,10 @@ function mount(): TranslatorInstance {
         >
           {/* button */}
           <div>
-            <div class={tw`relative rounded-full bg-white`}>
+            <div class={tw('relative rounded-full bg-white')}>
               <Dynamic
                 component={translated() ? IconCarbonReset : IconCarbonTranslate}
-                class={tw`w-6 h-6 p-2 align-middle cursor-pointer`}
+                class={tw('w-6 h-6 p-2 align-middle cursor-pointer')}
                 onClick={(e: MouseEvent) => {
                   e.stopPropagation()
                   e.preventDefault()
@@ -195,25 +195,25 @@ function mount(): TranslatorInstance {
                 }}
               />
               <div
-                class={tw`absolute inset-0 border-1 border-solid rounded-full pointer-events-none`}
+                class={tw('absolute inset-0 border-1 border-solid rounded-full pointer-events-none')}
                 classList={{
-                  [tw`border-x-gray-300 border-b-gray-300 border-t-gray-600 animate-spin`]: processing(),
-                  [tw`border-gray-300`]: !processing(),
+                  [tw('border-x-gray-300 border-b-gray-300 border-t-gray-600 animate-spin')]: processing(),
+                  [tw('border-gray-300')]: !processing(),
                 }}
               />
             </div>
           </div>
           {/* advanced menu */}
-          <div class={tw`-ml-2 mt-1.5`}>
+          <div class={tw('-ml-2 mt-1.5')}>
             <Show when={!translateMounted()}>
-              <div class={tw`flex flex-col text-base px-1 border-1 border-solid border-gray-300 rounded-2xl bg-white cursor-default`}>
+              <div class={tw('flex flex-col text-base px-1 border-1 border-solid border-gray-300 rounded-2xl bg-white cursor-default')}>
                 <Switch>
                   <Match when={status()}>
-                    <div class={tw`px-1`}>{status()}</div>
+                    <div class={tw('px-1')}>{status()}</div>
                   </Match>
                   <Match when={advancedMenuOpen()}>
                     <div
-                      class={tw`flex items-center py-1`}
+                      class={tw('flex items-center py-1')}
                       onClick={(e) => {
                         e.stopPropagation()
                         e.preventDefault()
@@ -221,10 +221,10 @@ function mount(): TranslatorInstance {
                         setAdvancedMenuOpen(false)
                       }}
                     >
-                      <IconCarbonChevronLeft class={tw`align-middle cursor-pointer`} />
+                      <IconCarbonChevronLeft class={tw('align-middle cursor-pointer')} />
                       <div>{t('settings.inline-options-title')()}</div>
                     </div>
-                    <div class={tw`flex flex-col w-48 gap-2 mx-2`}>
+                    <div class={tw('flex flex-col w-48 gap-2 mx-2')}>
                       <For
                         each={[
                           [t('settings.detection-resolution'),
@@ -248,9 +248,9 @@ function mount(): TranslatorInstance {
                       >{([title, opt, setOpt, opts, optMap]) => (
                         <div>
                           <div>{title()}</div>
-                          <div class={tw`relative px-1`}>
+                          <div class={tw('relative px-1')}>
                             <select
-                              class={tw`w-full py-1 appearance-none text-black border-x-0 border-t-0 border-b border-solid border-gray-600 bg-transparent`}
+                              class={tw('w-full py-1 appearance-none text-black border-x-0 border-t-0 border-b border-solid border-gray-600 bg-transparent')}
                               value={opt()}
                               onChange={(e) => {
                                 // @ts-expect-error setOpt are incompatible with each other
@@ -264,12 +264,12 @@ function mount(): TranslatorInstance {
                                 }</option>
                               )}</For>
                             </select>
-                            <IconCarbonChevronDown class={tw`absolute top-1 right-1 pointer-events-none`} />
+                            <IconCarbonChevronDown class={tw('absolute top-1 right-1 pointer-events-none')} />
                           </div>
                         </div>
                       )}</For>
                       <label
-                        class={tw`flex items-center cursor-pointer`}
+                        class={tw('flex items-center cursor-pointer')}
                         onClick={(e) => {
                           e.stopImmediatePropagation()
                         }}
@@ -285,7 +285,7 @@ function mount(): TranslatorInstance {
                       </label>
                     </div>
                     <div
-                      class={tw`w-full mt-2 mb-1 py-1 border border-solid border-gray-600 rounded-full text-center cursor-pointer`}
+                      class={tw('w-full mt-2 mb-1 py-1 border border-solid border-gray-600 rounded-full text-center cursor-pointer')}
                       onClick={(e) => {
                         e.stopPropagation()
                         e.preventDefault()
@@ -309,7 +309,7 @@ function mount(): TranslatorInstance {
                   </Match>
                   <Match when={true}>
                     <IconCarbonChevronRight
-                      class={tw`py-1 align-middle cursor-pointer`}
+                      class={tw('py-1 align-middle cursor-pointer')}
                       onClick={(e) => {
                         e.stopPropagation()
                         e.preventDefault()
@@ -513,7 +513,7 @@ function mount(): TranslatorInstance {
     return (
       <div
         data-transall="true"
-        class={tw`inline-block mr-3 p-0 h-8 text-inherit leading-8 font-bold cursor-pointer`}
+        class={tw('inline-block mr-3 p-0 h-8 text-inherit leading-8 font-bold cursor-pointer')}
         onClick={(e) => {
           e.stopPropagation()
           e.preventDefault()

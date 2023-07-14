@@ -1,7 +1,12 @@
+.DS_Store
+
 local-tests
 *.ckpt
 *.pyc
 __pycache__
+
 target/
-/gateway/src/prisma.rs
 node_modules
+
+/gateway/src/prisma.rs
+/wk-gateway/src/protoGen

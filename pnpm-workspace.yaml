@@ -2,3 +2,5 @@ packages:
   - web
   - web-ext
   - userscript
+  - wk-gateway
+  - wkr2

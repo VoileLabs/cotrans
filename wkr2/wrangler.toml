@@ -1,0 +1,20 @@
+name = "cotrans-wkr2-public"
+main = "src/index.ts"
+compatibility_date = '2023-07-09'
+compatibility_flags = []
+workers_dev = false
+usage_model = 'bundled'
+
+[[r2_buckets]]
+binding = 'BUCKET'
+bucket_name = 'cotrans-public'
+
+[placement]
+mode = "smart"
+
+[env.private]
+name = "cotrans-wkr2-private"
+
+[[env.private.r2_buckets]]
+binding = 'BUCKET'
+bucket_name = 'cotrans-private'

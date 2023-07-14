@@ -3,22 +3,36 @@
 // @name:zh-CN        Cotrans 漫画/图片翻译器 (常规版)
 // @namespace         https://cotrans.touhou.ai/userscript/#regular
 // @version           {{version}}
-// @description       (WIP) Translate texts in images on Pixiv, Twitter
-// @description:zh-CN (WIP) 一键翻译图片内文字，支持 Pixiv、Twitter
+// @description       (WIP) Translate texts in images on Pixiv, Twitter, Misskey, Calckey
+// @description:zh-CN (WIP) 一键翻译图片内文字，支持 Pixiv, Twitter, Misskey, Calckey
 // @author            QiroNT
 // @license           GPL-3.0
 // @contributionURL   https://ko-fi.com/voilelabs
 // @supportURL        https://discord.gg/975FRV8ca6
 // @source            https://cotrans.touhou.ai/
-// @include http*://www.pixiv.net/*
-// @match http://www.pixiv.net/
-// @include http*://twitter.com/*
-// @match http://twitter.com/
+// @include https://www.pixiv.net/*
+// @match https://www.pixiv.net/*
+// @include https://twitter.com/*
+// @match https://twitter.com/*
+// @include https://misskey.io/*
+// @match https://misskey.io/*
+// @include https://calckey.social/*
+// @match https://calckey.social/*
+// @include https://*
+// @match https://*
 // @connect pixiv.net
 // @connect pximg.net
 // @connect twitter.com
 // @connect twimg.com
+// @connect misskey.io
+// @connect misskeyusercontent.com
+// @connect s3.arkjp.net
+// @connect nfs.pub
+// @connect calckey.social
+// @connect backblazeb2.com
+// @connect dvd.moe
 // @connect api.cotrans.touhou.ai
+// @connect r2.cotrans.touhou.ai
 // @connect cotrans-r2.moe.ci
 // @connect *
 // @grant GM.xmlHttpRequest

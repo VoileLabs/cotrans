@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "dependencies": {
+    "jose": "^4.14.4",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20230710.1"
+  }
+}

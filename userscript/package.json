@@ -1,7 +1,7 @@
 {
   "name": "imgtrans-userscript",
   "type": "module",
-  "version": "0.8.0-bata.11",
+  "version": "0.8.0-bata.16",
   "private": true,
   "scripts": {
     "build": "rollup -c",
@@ -11,32 +11,36 @@
     "lint": "eslint --fix ."
   },
   "dependencies": {
-    "@solid-primitives/map": "^0.4.5",
+    "@solid-primitives/event-listener": "^2.2.13",
+    "@solid-primitives/map": "^0.4.6",
     "@solid-primitives/mutation-observer": "^1.1.13",
     "@solid-primitives/scheduled": "^1.3.2",
     "@solid-primitives/utils": "^6.2.0",
-    "solid-js": "^1.7.6",
-    "twind": "^0.16.19"
+    "@twind/core": "^1.1.3",
+    "@twind/preset-autoprefix": "^1.0.7",
+    "@twind/preset-tailwind": "^1.1.4",
+    "solid-js": "^1.7.8"
   },
   "devDependencies": {
-    "@babel/core": "^7.22.1",
-    "@iconify-json/carbon": "^1.1.17",
+    "@babel/core": "^7.22.9",
+    "@iconify-json/carbon": "^1.1.18",
+    "@iconify-json/fluent": "^1.1.26",
     "@rollup/plugin-babel": "^6.0.3",
-    "@rollup/plugin-commonjs": "^25.0.0",
+    "@rollup/plugin-commonjs": "^25.0.2",
     "@rollup/plugin-node-resolve": "^15.1.0",
-    "@rollup/plugin-yaml": "^4.1.0",
-    "@types/node": "^20.2.5",
+    "@rollup/plugin-yaml": "^4.1.1",
+    "@types/node": "^20.4.2",
     "@types/tampermonkey": "^4.0.10",
-    "babel-preset-solid": "^1.7.4",
-    "esbuild": "^0.17.19",
-    "fast-glob": "^3.2.12",
-    "happy-dom": "^9.20.3",
-    "magic-string": "^0.30.0",
+    "babel-preset-solid": "^1.7.7",
+    "esbuild": "^0.18.12",
+    "fast-glob": "^3.3.0",
+    "happy-dom": "^10.3.2",
+    "magic-string": "^0.30.1",
     "resolve": "^1.22.2",
     "rimraf": "^5.0.1",
-    "rollup": "^3.23.0",
+    "rollup": "^3.26.2",
     "rollup-plugin-esbuild": "^5.0.0",
-    "unplugin-icons": "^0.16.2",
-    "vitest": "^0.31.4"
+    "unplugin-icons": "^0.16.5",
+    "vitest": "^0.33.0"
   }
 }

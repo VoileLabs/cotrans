@@ -1,0 +1,3 @@
+-- Migration number: 0001 	 2023-07-14T15:12:56.498Z
+
+ALTER TABLE source_image ADD COLUMN size INTEGER NOT NULL;

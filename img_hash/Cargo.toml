@@ -1,0 +1,36 @@
+[package]
+
+name = "image_hasher"
+version = "1.2.0"
+edition.workspace = true
+rust-version.workspace = true
+license = "MIT OR Apache-2.0"
+publish = false
+
+authors = [
+  "Rafał Mikrut <mikrutrafal@protonmail.com>",
+  "Austin Bonander <austin.bonander@gmail.com>",
+]
+description = "A simple library that provides perceptual hashing and difference calculation for images."
+documentation = "http://docs.rs/image_hasher"
+keywords = ["image", "hash", "perceptual", "difference"]
+repository = "http://github.com/qarmin/img_hash"
+readme = "README.md"
+
+[features]
+nightly = []
+
+[dependencies]
+base64 = "0.21.2"
+image = { version = "0.24.6", default-features = false }
+fast_image_resize = "2.7.3"
+rustdct = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+transpose = "0.2"
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = { version = "0.8", features = ["small_rng"] }
+
+[[bin]]
+name = "hash_image"

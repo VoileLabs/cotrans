@@ -2,10 +2,6 @@
 export default defineNuxtConfig({
   ssr: false,
 
-  experimental: {
-    reactivityTransform: true,
-  },
-
   modules: [
     '@vueuse/nuxt',
     '@unocss/nuxt',
@@ -37,7 +33,7 @@ export default defineNuxtConfig({
     webFonts: {
       provider: 'google',
       fonts: {
-        quicksand: 'Quicksand:300..700',
+        quicksand: 'Quicksand:300,400,500,600,700',
       },
     },
     shortcuts: [

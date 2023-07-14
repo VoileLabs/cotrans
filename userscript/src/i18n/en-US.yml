@@ -19,6 +19,7 @@ common:
     upscaling: Upscaling
     detection: Detecting text
     ocr: Scanning text
+    textline_merge: Merging text lines
     mask-generation: Generating mask
     inpainting: Inpainting
     translating: Translating

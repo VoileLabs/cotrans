@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["gateway", "prisma-cli", "proto-rs"]
+members = ["proto-rs", "wk-image", "img_hash"]
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.68.2"
+rust-version = "1.71.0"
 
 [profile.release]
 lto = true
+strip = true
+codegen-units = 1

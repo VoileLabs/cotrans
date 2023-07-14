@@ -1,0 +1,28 @@
+name = 'cotrans-wk-gateway'
+main = 'dist/index.mjs'
+compatibility_date = '2023-07-09'
+compatibility_flags = []
+workers_dev = false
+usage_model = 'bundled'
+services = [
+  { binding = "image", service = "cotrans-wk-image" },
+  { binding = "wkr2_private", service = "cotrans-wkr2-private" },
+  { binding = "wkr2_public", service = "cotrans-wkr2-public" },
+]
+
+[durable_objects]
+bindings = [
+  { name = "doMitWorker", class_name = "DOMitWorker", script_name = "cotrans-wk-gateway-domitworker" },
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cotrans"
+database_id = "5586b253-f5be-44cc-9ae4-284029d78da0"
+migrations_dir = "../migrations"
+
+[placement]
+mode = "smart"
+
+[build]
+command = "npm run build"

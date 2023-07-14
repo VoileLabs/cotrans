@@ -14,4 +14,4 @@ default-features = false
 features = ["postgresql"]
 
 [target.x86_64-unknown-linux-musl.dependencies]
-openssl = { version = "0.10.54", features = ["vendored"] }
+openssl = { version = "0.10.55", features = ["vendored"] }

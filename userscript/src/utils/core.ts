@@ -7,7 +7,7 @@ import {
   textDetector,
   translatorService,
 } from './storage'
-import { formatProgress, formatSize } from '.'
+import { formatProgress } from '.'
 
 export async function resizeToSubmit(blob: Blob, suffix: string): Promise<{ blob: Blob; suffix: string }> {
   const blobUrl = URL.createObjectURL(blob)
@@ -47,7 +47,7 @@ export async function resizeToSubmit(blob: Blob, suffix: string): Promise<{ blob
     }, 'image/png')
   })
 
-  console.log(`resized from ${w}x${h}(${formatSize(blob.size)},${suffix}) to ${width}x${height}(${formatSize(newBlob.size)},png)`)
+  // console.log(`resized from ${w}x${h}(${formatSize(blob.size)},${suffix}) to ${width}x${height}(${formatSize(newBlob.size)},png)`)
 
   return {
     blob: newBlob,
@@ -106,7 +106,7 @@ export async function submitTranslate(
     },
   })
 
-  console.log(result.responseText)
+  // console.log(result.responseText)
   return JSON.parse(result.responseText)
 }
 

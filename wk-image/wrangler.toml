@@ -1,0 +1,13 @@
+name = "cotrans-wk-image"
+main = "build/worker/shim.mjs"
+compatibility_date = '2023-07-09'
+compatibility_flags = []
+usage_model = 'unbound'
+workers_dev = false
+
+[[r2_buckets]]
+binding = 'BUCKET_PRI'
+bucket_name = 'cotrans-private'
+
+[build]
+command = "cargo install -q worker-build && RUSTFLAGS=\"-Ctarget-feature=+simd128\" worker-build --release . -Zbuild-std=std,panic_abort"

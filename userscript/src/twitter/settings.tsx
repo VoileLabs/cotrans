@@ -2,7 +2,7 @@ import { createMutationObserver } from '@solid-primitives/mutation-observer'
 import { throttle } from '@solid-primitives/scheduled'
 import { onCleanup } from 'solid-js'
 import { render } from 'solid-js/web'
-import { tw } from 'twind'
+import { tw } from '../utils/twind'
 import { t } from '../i18n'
 import type { SettingsInjector, SettingsInjectorInstance } from '../main'
 import { Settings } from '../settings'
@@ -80,9 +80,9 @@ function mount(): SettingsInjectorInstance {
 
       return (
         // r-37j5jr: twitter font
-        <div class={tw`px-4 r-37j5jr`}>
-          <div class={tw`flex items-center h-14`}>
-            <h2 class={tw`text-xl leading-6`}>
+        <div class={`${tw('px-4')} r-37j5jr`}>
+          <div class={tw('flex items-center h-14')}>
+            <h2 class={tw('text-xl leading-6')}>
               {t('settings.title')()}
             </h2>
           </div>
@@ -116,7 +116,7 @@ function mount(): SettingsInjectorInstance {
         if (settingsTab && settingsTab.children.length < 2) {
           settingsTab.style.backgroundColor = '#F7F9F9'
           const activeIndicator = document.createElement('div')
-          activeIndicator.className = tw`absolute z-10 inset-0 border-y-0 border-l-0 border-r-2 border-solid border-[#1D9Bf0] pointer-events-none`
+          activeIndicator.className = tw('absolute z-10 inset-0 border-y-0 border-l-0 border-r-2 border-solid border-[#1D9Bf0] pointer-events-none')
           settingsTab.appendChild(activeIndicator)
         }
         checkSettings()

@@ -1,5 +1,8 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
+useHead({
+  title: 'Cotrans Manga Image Translator by VoileLabs',
+})
 
 const languages = {
   CHS: '简体中文',
@@ -21,7 +24,7 @@ const languages = {
   ESP: 'español',
   TRK: 'Türk dili',
 }
-const language = $ref('CHS')
+const language = useLocalStorage('trans_language', 'CHS')
 
 const sizes = {
   S: '1024px',
@@ -29,13 +32,13 @@ const sizes = {
   L: '2048px',
   X: '2560px',
 }
-const size = $ref('L')
+const size = ref('L')
 
 const detectors = {
   default: 'Default',
   ctd: 'Comic Text Detector',
 }
-const detector = $ref('default')
+const detector = ref('default')
 
 const directions = {
   default: 'Follow language',
@@ -43,51 +46,55 @@ const directions = {
   h: 'All horizontal',
   v: 'All vertical',
 }
-const direction = $ref('default')
+const direction = useSessionStorage('trans_direction', 'default')
 
 const translators = {
+  'none': 'Remove text',
+  'gpt3.5': 'GPT-3.5',
   'youdao': 'Youdao',
   'baidu': 'Baidu',
   'google': 'Google',
   'deepl': 'DeepL',
   'papago': 'Papago',
-  'gpt3.5': 'GPT-3.5 (Experimental)',
-  'offline': 'Offline',
-  'none': 'None',
-  'original': 'Original',
+  'offline': 'Sugoi / M2M100',
+  'original': 'Untranslated',
 }
-const translator = $ref('youdao')
+const translator = useSessionStorage('trans_translator', 'gpt3.5')
 
 const acceptTypes = ['image/png', 'image/jpeg', 'image/bmp', 'image/webp']
-let file = $shallowRef<File | null>(null)
+const file = shallowRef<File | null>(null)
 
 function onDrop(e: DragEvent) {
   const f = e.dataTransfer?.files[0]
   if (f && acceptTypes.includes(f.type))
-    file = f
+    file.value = f
 }
 function onFileChange(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0]
   if (f && acceptTypes.includes(f.type))
-    file = f
+    file.value = f
 }
 useEventListener(document, 'paste', (e: ClipboardEvent) => {
   const f = e.clipboardData?.files[0]
   if (f && acceptTypes.includes(f.type))
-    file = f
+    file.value = f
 })
 
-let fileUri = $ref('')
-watch($$(file), (file) => {
-  if (fileUri)
-    URL.revokeObjectURL(fileUri)
-  fileUri = file ? URL.createObjectURL(file) : ''
+const fileUri = ref('')
+watch(file, (file) => {
+  if (fileUri.value)
+    URL.revokeObjectURL(fileUri.value)
+  fileUri.value = file ? URL.createObjectURL(file) : ''
 })
 
 interface TaskResult {
   translation_mask: string
 }
 
+interface QueryV1MessagePending {
+  type: 'pending'
+  pos: number
+}
 interface QueryV1MessageStatus {
   type: 'status'
   status: string
@@ -104,33 +111,34 @@ interface QueryV1MessageNotFound {
   type: 'not_found'
 }
 type QueryV1Message =
+  | QueryV1MessagePending
   | QueryV1MessageStatus
   | QueryV1MessageResult
   | QueryV1MessageError
   | QueryV1MessageNotFound
 
-let taskId = $ref('')
-let errorId = $ref('')
-let errorStatus = $ref('')
-let resultBlob = $ref<Blob | null>(null)
-let status = $ref('')
+const taskId = ref('')
+const errorId = ref('')
+const errorStatus = ref('')
+const resultBlob = ref<Blob | null>(null)
+const status = ref('')
 async function upload() {
-  if (!file)
+  if (!file.value)
     return
 
-  errorId = ''
-  errorStatus = ''
-  resultBlob = null
-  status = 'uploading'
+  errorId.value = ''
+  errorStatus.value = ''
+  resultBlob.value = null
+  status.value = 'uploading'
 
   const formData = new FormData()
-  formData.append('file', file)
-  formData.append('mime', file.type)
-  formData.append('target_language', language)
-  formData.append('detector', detector)
-  formData.append('direction', direction)
-  formData.append('translator', translator)
-  formData.append('size', size)
+  formData.append('file', file.value)
+  formData.append('mime', file.value.type)
+  formData.append('target_language', language.value)
+  formData.append('detector', detector.value)
+  formData.append('direction', direction.value)
+  formData.append('translator', translator.value)
+  formData.append('size', size.value)
 
   const res = await $fetch<{
     id: string
@@ -140,41 +148,46 @@ async function upload() {
     method: 'PUT',
     body: formData,
     onResponseError({ response }) {
-      errorId = response._data
-      errorStatus = `${response.status} ${response.statusText}\n${response._data}`
+      errorId.value = response._data
+      errorStatus.value = `${response.status} ${response.statusText}\n${response._data}`
     },
     onRequestError({ error }) {
-      errorStatus = error.toString()
+      errorStatus.value = error.toString()
     },
   })
 
-  status = 'pending'
-  taskId = res.id
+  status.value = 'pending'
+  taskId.value = res.id
 
   let result: TaskResult
-  if (res.status === 'done' && res.result) {
+  if (res.result) {
     result = res.result
   }
   else {
-    const socket = new WebSocket(`${config.public.wsBase}/task/${taskId}/event/v1`)
-    result = await new Promise<TaskResult>((resolve) => {
+    const socket = new WebSocket(`${config.public.wsBase}/task/${taskId.value}/event/v1`)
+    result = await new Promise<TaskResult>((resolve, reject) => {
       socket.addEventListener('message', (e) => {
         try {
           const data: QueryV1Message = JSON.parse(e.data)
-          if (data.type === 'status') {
-            status = data.status
+          if (data.type === 'pending') {
+            status.value = `pending (${data.pos} in queue)`
+          }
+          else if (data.type === 'status') {
+            status.value = data.status
           }
           else if (data.type === 'result') {
             socket.close()
             resolve(data.result)
           }
           else if (data.type === 'error') {
-            errorId = data.error_id ?? 'undefined'
+            errorId.value = data.error_id ?? 'undefined'
             socket.close()
+            reject()
           }
           else if (data.type === 'not_found') {
-            errorId = 'not_found'
+            errorId.value = 'not_found'
             socket.close()
+            reject()
           }
         }
         catch (e) {
@@ -185,14 +198,14 @@ async function upload() {
     socket.close()
   }
 
-  status = 'rendering'
+  status.value = 'rendering'
 
   // layer translation_mask on top of original image
   const canvas = document.createElement('canvas')
   const canvasCtx = canvas.getContext('2d')!
   // draw original image
   const img = new Image()
-  img.src = fileUri
+  img.src = fileUri.value
   await new Promise((resolve) => {
     img.onload = () => {
       canvas.width = img.width
@@ -213,23 +226,23 @@ async function upload() {
   })
 
   canvas.toBlob((blob) => {
-    resultBlob = blob
+    resultBlob.value = blob
   }, 'image/png')
 }
 
-let resultUri = $ref('')
-watch($$(resultBlob), (blob) => {
-  if (resultUri)
-    URL.revokeObjectURL(resultUri)
-  resultUri = blob ? URL.createObjectURL(blob) : ''
+const resultUri = ref('')
+watch(resultBlob, (blob) => {
+  if (resultUri.value)
+    URL.revokeObjectURL(resultUri.value)
+  resultUri.value = blob ? URL.createObjectURL(blob) : ''
 })
 
 function saveAsPNG() {
-  if (!resultUri || !taskId)
+  if (!resultUri.value || !taskId.value)
     return
 
   const a = document.createElement('a')
-  a.href = resultUri
+  a.href = resultUri.value
   a.download = `translation-${taskId}.png`
   a.classList.add('hidden')
   document.body.appendChild(a)
@@ -238,12 +251,12 @@ function saveAsPNG() {
 }
 
 function reset() {
-  file = null
-  taskId = ''
-  errorId = ''
-  errorStatus = ''
-  resultBlob = null
-  status = ''
+  file.value = null
+  taskId.value = ''
+  errorId.value = ''
+  errorStatus.value = ''
+  resultBlob.value = null
+  status.value = ''
 }
 </script>
 
@@ -371,6 +384,9 @@ function reset() {
               <label class="pointer-events-auto">
                 <span class="ml-2 text-sm">Translator</span>
                 <UListbox v-model="translator" class="w-56" :items="translators" />
+                <div class="mt-1 ml-1 w-54 text-xs">
+                  If GPT-3.5 can't process your image, try using other translators!
+                </div>
               </label>
 
               <button

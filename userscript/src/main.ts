@@ -1,5 +1,3 @@
-import './prefight'
-
 import { throttle } from '@solid-primitives/scheduled'
 import { createRoot } from 'solid-js'
 import { DelegatedEvents } from 'solid-js/web'
@@ -100,6 +98,16 @@ export async function start(translators: Translator[], settingsInjectors: Settin
 
   if (window.onurlchange === null) {
     window.addEventListener('urlchange', onUpdate)
+
+    // FIXME temporary fix for TM not firing urlchange event on hash change
+    const pushState = history.pushState
+    window.history.pushState = function () {
+      // eslint-disable-next-line prefer-rest-params
+      pushState.apply(this, arguments as any)
+      // eslint-disable-next-line prefer-rest-params
+      if (typeof arguments[2] === 'string' && arguments[2].startsWith('#'))
+        onUpdate()
+    }
   }
   else {
     const installObserver = new MutationObserver(throttle(onUpdate, 200))

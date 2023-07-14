@@ -24,10 +24,13 @@ export function createGMSignal<T>(key: string, initialValue?: T) {
   const [signal, setSignal] = createSignal(initialValue) as GMSignal<T>
 
   let listener: number | undefined
-  GMP.addValueChangeListener?.(key, (name, oldValue, newValue, remote) => {
-    if (name === key && (remote === undefined || remote === true))
-      read(newValue)
-  }).then(l => listener = l)
+
+  Promise.resolve()
+    .then(() => GMP.addValueChangeListener?.(key, (name, oldValue, newValue, remote) => {
+      if (name === key && (remote === undefined || remote === true))
+        read(newValue)
+    }))
+    .then(l => listener = l)
 
   let effectPaused = false
   createEffect(on(signal, () => {
@@ -73,7 +76,7 @@ export function createGMSignal<T>(key: string, initialValue?: T) {
 
 export const [detectionResolution, setDetectionResolution] = createGMSignal<DetectResOption>('detectionResolution', 'M')
 export const [textDetector, setTextDetector] = createGMSignal<TextDetectorOption>('textDetector', 'default')
-export const [translatorService, setTranslatorService] = createGMSignal<TranslatorOption>('translator', 'youdao')
+export const [translatorService, setTranslatorService] = createGMSignal<TranslatorOption>('translator', 'gpt3.5')
 export const [renderTextOrientation, setRenderTextOrientation] = createGMSignal<RenderTextDirOption>('renderTextOrientation', 'auto')
 export const [targetLang, setTargetLang] = createGMSignal<TargetLangOption>('targetLang', '')
 export const [scriptLang, setScriptLang] = createGMSignal<ScriptLangOption>('scriptLanguage', '')

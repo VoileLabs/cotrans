@@ -1,6 +1,6 @@
 import type { Accessor, Component, JSX } from 'solid-js'
 import { For, Show } from 'solid-js'
-import { tw } from 'twind'
+import { tw } from '../utils/twind'
 import { t } from '../i18n'
 import {
   detectionResolution,
@@ -46,12 +46,12 @@ export const textDetectorOptions = Object.keys(textDetectorOptionsMap)
 export type TextDetectorOption = keyof typeof textDetectorOptionsMap
 
 export const translatorOptionsMap = {
+  'gpt3.5': () => 'GPT-3.5',
   'youdao': () => 'Youdao',
   'baidu': () => 'Baidu',
   'google': () => 'Google',
   'deepl': () => 'DeepL',
   'papago': () => 'Papago',
-  'gpt3.5': () => 'GPT-3.5 (Experimental)',
   'offline': () => 'Sugoi / NLLB',
   'none': t('settings.translator-options.none'),
 } satisfies OptionsMap
@@ -106,7 +106,7 @@ export const Settings: Component<{
   const textStyle = () => props.textStyle ?? {}
 
   return (
-    <div class={tw`flex flex-col gap-2`}>
+    <div class={tw('flex flex-col gap-2')}>
       {/* Meta */}
       <div>{EDITION} edition, v{VERSION}</div>
       {/* Sponsor */}
@@ -125,7 +125,7 @@ export const Settings: Component<{
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              class={tw`no-underline text-blue-600`}
+              class={tw('no-underline text-blue-600')}
             >{name}</a>
           </>
         )}</For>
@@ -168,7 +168,7 @@ export const Settings: Component<{
           t('settings.keep-instances-desc'),
         ] as const,
       ]}>{([title, opt, setOpt, optMap, desc]) => (
-        <div class={itemOrientation() === 'horizontal' ? tw`flex items-center` : ''}>
+        <div class={itemOrientation() === 'horizontal' ? tw('flex items-center') : ''}>
           <div style={textStyle()}>{title()}</div>
           <div>
             <select
@@ -181,7 +181,7 @@ export const Settings: Component<{
               ))}
             </select>
             <Show when={desc()}>
-              <div class={tw`text-sm`}>{desc()}</div>
+              <div class={tw('text-sm')}>{desc()}</div>
             </Show>
           </div>
         </div>
