@@ -112,6 +112,7 @@ The worker must be in "Unbound" usage model.
 ## Deploy `wk-gateway`
 
 Create a D1 database in Cloudflare dashboard, named `cotrans`.
+
 Edit `wk-gateway/wrangler.toml`, replace the value of `database_id` with the ID of the database.
 
 Edit `wk-gateway/src/index.ts`, put the domain for `web` inside `CORS_ORIGINS`.
@@ -120,6 +121,7 @@ Run the following commands to deploy `cotrans-wk-gateway`:
 
 ```bash
 cd wk-gateway
+wrangler d1 migrations apply DB --experimental-backend
 wrangler deploy --keep-vars -c wrangler.domitworker.toml
 wrangler deploy --keep-vars
 ```
