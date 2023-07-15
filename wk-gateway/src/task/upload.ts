@@ -33,6 +33,7 @@ const DEFAULT_DIRECTION = {
 
 const ParamBase = z.object({
   retry: z.boolean().optional(),
+  group: z.string().max(14).optional(),
 
   mime: z.string().optional(),
 
@@ -203,6 +204,7 @@ RETURNING id, state, translation_mask
   // task is new
   const task: MitSubmitParam = {
     id: taskId,
+    group: param.group,
     file: sourceInfo.key,
     target_language: param.target_language,
     detector: param.detector,

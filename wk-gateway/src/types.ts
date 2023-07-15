@@ -49,3 +49,7 @@ export type QueryV1Message =
   | QueryV1MessageResult
   | QueryV1MessageError
   | QueryV1MessageNotFound
+
+export type GroupQueryV1Message = QueryV1Message & {
+  id: string
+}

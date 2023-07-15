@@ -2,15 +2,18 @@ import { z } from 'zod'
 import { SignJWT, importPKCS8, importSPKI } from 'jose'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import type { Bindings, QueryV1Message } from '../types'
+import type { Bindings, GroupQueryV1Message, QueryV1Message } from '../types'
 import { WebSocketMessage } from '../protoGen/gateway.mit_pb'
 import { dbEnum } from '../db'
 import { createSortableId } from './id'
+import { TTLSet } from './ttl'
 
 const QUEUE_CAP = 40
 const QUEUE_GC_TARGET = 20
 const QUEUE_GC_PICKUP = 4
-const QUEYE_GC_PICKUP_COUNT = 4
+const QUEUE_GC_PICKUP_COUNT = 4
+const QUEUE_KEEP_ALIVE_TIMEOUT = 5 * 1000
+const TASK_GROUP_LIMIT = 4
 
 function memo<T>(fn: () => NonNullable<T>): () => NonNullable<T> {
   let cache: T
@@ -26,8 +29,26 @@ function sendAndClose(data: unknown) {
   return new Response(null, { status: 101, webSocket: pair[0] })
 }
 
+function withAttachment<T>(ws: WebSocket[]) {
+  return ws.map(ws => ({
+    // @ts-expect-error Cloudflare specific
+    attachment: ws.deserializeAttachment() as T,
+    ws,
+  }))
+}
+
+function mergeGroups(a: string[], b: string[]) {
+  const n = a.slice()
+  for (const g of b) {
+    if (!n.includes(g))
+      n.push(g)
+  }
+  return n
+}
+
 export interface MitTask {
   id: string
+  group: string[]
   file: string
   target_language: string
   detector: string
@@ -35,6 +56,14 @@ export interface MitTask {
   translator: string
   size: string
 }
+
+type MitTaskS = [
+  // sid
+  string,
+  {
+    group: string[]
+  },
+]
 
 interface WsWorkerAttachment {
   // type: worker
@@ -47,6 +76,8 @@ interface WsWorkerAttachment {
     string,
     // translation_mask
     string,
+    // group
+    string[],
   ][]
 }
 
@@ -54,7 +85,9 @@ interface WsListenerAttachment {
   // type: listener
   t: 'ls'
   // task_id
-  tid: string
+  tid?: string
+  // group
+  g?: string
 }
 
 type WsAttachment = WsWorkerAttachment | WsListenerAttachment
@@ -75,6 +108,7 @@ interface WsCloseContext<T> {
 
 const SubmitParam = z.object({
   id: z.string(),
+  group: z.string().max(14).optional(),
   file: z.string(),
   target_language: z.string(),
   detector: z.string(),
@@ -85,157 +119,194 @@ const SubmitParam = z.object({
 export type MitSubmitParam = z.infer<typeof SubmitParam>
 
 export class DOMitWorker implements DurableObject {
-  state: DurableObjectState
-  env: Bindings
+  objectCreated = Date.now()
 
-  jwt_private_key: () => Promise<CryptoKey>
-  jwt_public_key: () => Promise<CryptoKey>
-  app: () => Hono<{ Bindings: Bindings }>
-
-  queue: MitTask[] | undefined
+  queueCache: MitTask[] | undefined
   queueDirty = false
+  keepAliveCache = new TTLSet<string>(QUEUE_KEEP_ALIVE_TIMEOUT)
+  activeGroupsCache: Map<string, number> | undefined
 
-  constructor(state: DurableObjectState, env: Bindings) {
-    this.state = state
-    this.env = env
+  jwt_private_key = memo(() => importPKCS8(this.env.JWT_PRIVATE_KEY, 'ES256'))
+  jwt_public_key = memo(() => importSPKI(this.env.JWT_PUBLIC_KEY, 'ES256'))
 
+  app = memo(() => new Hono<{ Bindings: Bindings }>()
+    .get('/status', async ({ json }) => {
+      const queue = await this.getQueue()
+      const workers = this.state.getWebSockets('wk')
+      return json({
+        queue: queue.length,
+        workers: workers.length,
+      })
+    })
+    .get('/worker_ws', async ({ req }) => {
+      if (req.header('Upgrade') !== 'websocket')
+        throw new Error('Not a websocket request')
+
+      // authentication is done by the worker, so no need to check here
+
+      const pair = new WebSocketPair()
+
+      this.state.acceptWebSocket(pair[1], ['wk'])
+
+      const attachment: WsWorkerAttachment = { t: 'wk', q: [] }
+      // @ts-expect-error Cloudflare specific
+      pair[1].serializeAttachment(attachment)
+
+      // find task for this worker
+      await this.assignTasks([pair[1]])
+
+      return new Response(null, { status: 101, webSocket: pair[0] })
+    })
+    .put('/submit', async ({ req, json }) => {
+      const param = SubmitParam.parse(await req.json())
+
+      const task: MitTask = {
+        id: param.id,
+        group: param.group ? [param.group] : [],
+        file: param.file,
+        target_language: param.target_language,
+        detector: param.detector,
+        direction: param.direction,
+        translator: param.translator,
+        size: param.size,
+      }
+
+      const queue = await this.getQueue()
+
+      const mergeGroupsToTask = (oldGroup: string[]) => {
+        if (param.group) {
+          const group = mergeGroups(oldGroup, task.group)
+          if (group.length > TASK_GROUP_LIMIT)
+            return json({ id: null, error: 'group-limit' }, { status: 400 })
+          this.incActiveGroup(param.group)
+          // since task is always new, we can overwrite this
+          task.group = group
+        }
+      }
+
+      // special case: if the task id is already in the queue, replace it with the new task.
+      // duplication can happen if there's a force retry request submitted while
+      // the old task is still in the queue.
+      const pos = queue.findIndex(task => task.id === param.id)
+      if (pos !== -1) {
+        mergeGroupsToTask(queue[pos].group)
+        queue[pos] = task
+      }
+      else {
+        if (queue.length >= QUEUE_CAP && !await this.gcQueue(false, task.group))
+        // if the queue is full, reject the request
+          return json({ id: null, error: 'queue-full' }, { status: 503 })
+
+        // check if the task is in the backlog
+        // will task be pushed to backlog and immediately picked up?
+        // no, exsiting tasks don't go to this branch
+        const s = await this.state.storage.get<MitTaskS>(`gct:${task.id}`)
+        if (s) {
+          const [sid, { group }] = s
+
+          mergeGroupsToTask(group)
+
+          // no need to await here, since there's a put queue after
+          this.state.storage.delete(`gct:${task.id}`)
+          this.state.storage.delete(`gcs:${sid}`)
+        }
+
+        queue.push(task)
+      }
+
+      this.keepAliveCache.add(task.id)
+
+      await this.putQueue(queue, false)
+
+      // notify workers
+      await this.assignTasks(undefined, false)
+
+      await this.flushQueue()
+
+      return json({ id: task.id, pos: pos === -1 ? queue.length : pos })
+    })
+    .get('/group/event/:group', async ({ req }) => {
+      const group = req.param('group')
+
+      if (req.header('Upgrade') !== 'websocket')
+        throw new Error('Not a websocket request')
+
+      const pair = new WebSocketPair()
+
+      if (!(await this.getActiveGroups()).has(group)) {
+        // @ts-expect-error Cloudflare specific
+        pair[1].accept()
+        pair[1].close(1000, 'Group not found')
+        return new Response(null, { status: 101, webSocket: pair[0] })
+      }
+
+      this.state.acceptWebSocket(pair[1], ['ls', `lsg:${group}`])
+
+      const attachment: WsListenerAttachment = { t: 'ls', g: group }
+      // @ts-expect-error Cloudflare specific
+      pair[1].serializeAttachment(attachment)
+
+      return new Response(null, { status: 101, webSocket: pair[0] })
+    })
+    .get('/status/:id', async ({ req, json }) => {
+      const id = req.param('id')
+
+      this.keepAliveCache.add(id)
+
+      const status = await this.findTaskStatus(id)
+
+      return json(status)
+    })
+    .get('/event/:id', async ({ req, json }) => {
+      const id = req.param('id')
+
+      if (req.header('Upgrade') !== 'websocket')
+        throw new Error('Not a websocket request')
+
+      const status = await this.findTaskStatus(id)
+
+      if (status.type === 'not_found')
+      // special case: if the task is not found,
+      // return a json response to let the upstream worker know.
+        return json({ type: 'not_found' })
+
+      const pair = new WebSocketPair()
+
+      this.state.acceptWebSocket(pair[1], ['ls', `ls:${id}`])
+
+      const attachment: WsListenerAttachment = { t: 'ls', tid: id }
+      // @ts-expect-error Cloudflare specific
+      pair[1].serializeAttachment(attachment)
+
+      // send the current status
+      pair[1].send(JSON.stringify(status))
+
+      return new Response(null, { status: 101, webSocket: pair[0] })
+    })
+    .onError((err) => {
+      if (err instanceof HTTPException) {
+      // get the custom response
+        return err.getResponse()
+      }
+
+      console.error(String(err instanceof Error ? (err.stack ?? err) : err))
+
+      // return a generic response
+      return new Response('Internal Server Error', { status: 500 })
+    }))
+
+  constructor(public state: DurableObjectState, public env: Bindings) {
     // this.state.blockConcurrencyWhile(() => this.getQueue())
-
-    this.jwt_private_key = memo(() => importPKCS8(env.JWT_PRIVATE_KEY, 'ES256'))
-    this.jwt_public_key = memo(() => importSPKI(env.JWT_PUBLIC_KEY, 'ES256'))
-
-    this.app = memo(() => new Hono<{ Bindings: Bindings }>()
-      .get('/status', async ({ json }) => {
-        const queue = await this.getQueue()
-        const workers = this.state.getWebSockets('wk')
-        return json({
-          queue: queue.length,
-          workers: workers.length,
-        })
-      })
-      .get('/worker_ws', async ({ req }) => {
-        if (req.header('Upgrade') !== 'websocket')
-          throw new Error('Not a websocket request')
-
-        // authentication is done by the worker, so no need to check here
-
-        const pair = new WebSocketPair()
-
-        this.state.acceptWebSocket(pair[1], ['wk'])
-
-        const attachment: WsWorkerAttachment = { t: 'wk', q: [] }
-        // @ts-expect-error missing in types
-        pair[1].serializeAttachment(attachment)
-
-        // find task for this worker
-        await this.assignTasks([pair[1]])
-
-        return new Response(null, { status: 101, webSocket: pair[0] })
-      })
-      .put('/submit', async ({ req, json }) => {
-        const param = SubmitParam.parse(await req.json())
-
-        const task: MitTask = {
-          id: param.id,
-          file: param.file,
-          target_language: param.target_language,
-          detector: param.detector,
-          direction: param.direction,
-          translator: param.translator,
-          size: param.size,
-        }
-
-        const queue = await this.getQueue()
-
-        // special case: if the task id is already in the queue, replace it with the new task.
-        // duplication can happen if there's a force retry request submitted while
-        // the old task is still in the queue.
-        const pos = queue.findIndex(task => task.id === param.id)
-        if (pos !== -1) {
-          queue[pos] = task
-        }
-        else {
-          if (queue.length >= QUEUE_CAP && !await this.gcQueue())
-            // if the queue is full, reject the request
-            return json({ id: null, error: 'queue-full' }, { status: 503 })
-
-          // check if the task is in the backlog
-          // will task be pushed to backlog and immediately picked up?
-          // no, exsiting tasks don't go to this branch
-          const sid = await this.state.storage.get<string>(`gct:${task.id}`)
-          if (sid) {
-            // no need to await here, since there's a put queue after
-            this.state.storage.delete(`gct:${task.id}`)
-            this.state.storage.delete(`gcs:${sid}`)
-          }
-
-          queue.push(task)
-        }
-
-        await this.putQueue(queue, false)
-
-        // notify workers
-        await this.assignTasks()
-
-        await this.flushQueue()
-
-        return json({ id: task.id, pos: pos === -1 ? queue.length : pos })
-      })
-      .get('/status/:id', async ({ req, json }) => {
-        const id = req.param('id')
-
-        const status = await this.findTaskStatus(id)
-
-        return json(status)
-      })
-      .get('/event/:id', async ({ req, json }) => {
-        const id = req.param('id')
-
-        if (req.header('Upgrade') !== 'websocket')
-          throw new Error('Not a websocket request')
-
-        const status = await this.findTaskStatus(id)
-
-        if (status.type === 'not_found')
-          // special case: if the task is not found,
-          // return a json response to let the upstream worker know.
-          return json({ type: 'not_found' })
-
-        const pair = new WebSocketPair()
-
-        this.state.acceptWebSocket(pair[1], ['ls', `ls:${id}`])
-
-        const attachment: WsListenerAttachment = { t: 'ls', tid: id }
-        // @ts-expect-error missing in types
-        pair[1].serializeAttachment(attachment)
-
-        // send the current status
-        pair[1].send(JSON.stringify(status))
-
-        return new Response(null, { status: 101, webSocket: pair[0] })
-      })
-      .onError((err) => {
-        if (err instanceof HTTPException) {
-          // get the custom response
-          return err.getResponse()
-        }
-
-        console.error(String(err instanceof Error ? (err.stack ?? err) : err))
-
-        // return a generic response
-        return new Response('Internal Server Error', { status: 500 })
-      }),
-    )
   }
 
   async getQueue(): Promise<MitTask[]> {
-    if (this.queue === undefined)
-      this.queue = await this.state.storage.get<MitTask[]>('queue') ?? []
-    return this.queue
+    if (this.queueCache === undefined)
+      this.queueCache = await this.state.storage.get<MitTask[]>('queue') ?? []
+    return this.queueCache
   }
 
   async putQueue(queue: MitTask[], flush: boolean) {
-    this.queue = queue
+    this.queueCache = queue
     this.queueDirty = true
     if (flush)
       this.flushQueue()
@@ -243,23 +314,83 @@ export class DOMitWorker implements DurableObject {
 
   async flushQueue() {
     if (this.queueDirty) {
-      await this.state.storage.put('queue', this.queue)
+      await this.state.storage.put('queue', this.queueCache)
       this.queueDirty = false
     }
   }
 
-  async gcQueue(force = false): Promise<boolean> {
+  async getActiveGroups(
+    workers = withAttachment<WsWorkerAttachment>(this.state.getWebSockets('wk')),
+  ): Promise<Map<string, number>> {
+    if (this.activeGroupsCache !== undefined)
+      return this.activeGroupsCache
+
+    const groups = []
+    for (const { attachment } of workers) {
+      for (const task of attachment.q)
+        groups.push(...task[3])
+    }
+    for (const task of await this.getQueue())
+      groups.push(...task.group)
+
+    const map = new Map<string, number>()
+    if (groups.length === 0)
+      return this.activeGroupsCache = map
+
+    groups.sort()
+    let prev = groups[0]
+    let count = 1
+    for (let i = 1; i < groups.length; i++) {
+      if (groups[i] !== prev) {
+        map.set(prev, count)
+        prev = groups[i]
+        count = 1
+      }
+      else {
+        count++
+      }
+    }
+    map.set(prev, count)
+
+    return this.activeGroupsCache = map
+  }
+
+  async incActiveGroup(group: string) {
+    const map = await this.getActiveGroups()
+    const count = map.get(group) ?? 0
+    map.set(group, count + 1)
+  }
+
+  async decActiveGroup(group: string): Promise<boolean> {
+    const map = await this.getActiveGroups()
+    const count = map.get(group) ?? 0
+    if (count === 1) {
+      map.delete(group)
+      return true
+    }
+    else {
+      map.set(group, count - 1)
+      return false
+    }
+  }
+
+  isTaskAlive(
+    task: MitTask,
+    listeners = withAttachment<WsListenerAttachment>(this.state.getWebSockets('ls')),
+  ): boolean {
+    return this.keepAliveCache.has(task.id)
+      || listeners.some(({ attachment }) =>
+        attachment.tid === task.id
+        || (attachment.g && task.group.includes(attachment.g)),
+      )
+  }
+
+  async gcQueue(force = false, skipGroup: string[] = []): Promise<boolean> {
     const queue = await this.getQueue()
     if (!force && queue.length <= QUEUE_GC_TARGET)
       return false
 
-    const listeners = this.state
-      .getWebSockets('ls')
-      .map(ws => ({
-        // @ts-expect-error missing in types
-        attachment: ws.deserializeAttachment() as WsListenerAttachment,
-        ws,
-      }))
+    const listeners = withAttachment<WsListenerAttachment>(this.state.getWebSockets('ls'))
 
     const newQueue = []
     let left = queue.length - QUEUE_GC_TARGET
@@ -270,8 +401,12 @@ export class DOMitWorker implements DurableObject {
       }
 
       const task = queue[i]
+
+      if (skipGroup.some(g => task.group.includes(g)))
+        continue
+
       // keep tasks with listeners
-      if (listeners.some(({ attachment }) => attachment.tid === task.id)) {
+      if (this.isTaskAlive(task, listeners)) {
         newQueue.push(task)
         continue
       }
@@ -279,9 +414,12 @@ export class DOMitWorker implements DurableObject {
       // put task in backlog
       const sid = createSortableId()
       // we'll await later
-      this.state.storage.put(`gcs:${sid}`, task)
+      this.state.storage.put<MitTask>(`gcs:${sid}`, task)
       // we need two indexes, another for deletion on submit
-      this.state.storage.put(`gct:${task.id}`, sid)
+      this.state.storage.put<MitTaskS>(`gct:${task.id}`, [sid, { group: task.group }])
+
+      for (const g of task.group)
+        await this.decActiveGroup(g)
 
       left--
     }
@@ -301,15 +439,22 @@ export class DOMitWorker implements DurableObject {
 
     const tasks = await this.state.storage.list<MitTask>({
       prefix: 'gcs:',
-      limit: QUEYE_GC_PICKUP_COUNT,
+      limit: QUEUE_GC_PICKUP_COUNT,
     })
     if (tasks.size === 0)
       return
 
     const newTasks = Array.from(tasks.values())
+
+    for (const task of newTasks) {
+      for (const g of task.group)
+        await this.incActiveGroup(g)
+    }
+
     const newQueue = queue.concat(newTasks)
     this.state.storage.delete(Array.from(tasks.keys()))
     this.state.storage.delete(newTasks.map(task => `gct:${task.id}`))
+
     await this.putQueue(newQueue, true)
   }
 
@@ -318,7 +463,7 @@ export class DOMitWorker implements DurableObject {
     // we can first iterate through all workers
     const workers = this.state.getWebSockets('wk')
     for (const worker of workers) {
-      // @ts-expect-error missing in types
+      // @ts-expect-error Cloudflare specific
       const attachment: WsWorkerAttachment = worker.deserializeAttachment()
       for (const [tid, ts] of attachment.q) {
         if (tid === id)
@@ -343,7 +488,7 @@ export class DOMitWorker implements DurableObject {
       await this.gcPickup()
 
     let workerWithAttachments = workers.map((ws) => {
-      // @ts-expect-error missing in types
+      // @ts-expect-error Cloudflare specific
       const attachment: WsWorkerAttachment = ws.deserializeAttachment()
       return { ws, attachment }
     })
@@ -378,7 +523,7 @@ export class DOMitWorker implements DurableObject {
       }
 
       const translationMask = `mask/${task.id}.png`
-      attachment.q.push([task.id, 'pending', translationMask])
+      attachment.q.push([task.id, 'pending', translationMask, task.group])
       dirtyWS.set(ws, attachment)
 
       // kenton@cloudflare: No. Only awaiting external I/O counts.
@@ -431,7 +576,7 @@ export class DOMitWorker implements DurableObject {
     }
 
     for (const [ws, attachment] of dirtyWS) {
-      // @ts-expect-error missing in types
+      // @ts-expect-error Cloudflare specific
       ws.serializeAttachment(attachment)
     }
 
@@ -441,11 +586,11 @@ export class DOMitWorker implements DurableObject {
   }
 
   fetch(req: Request): Response | Promise<Response> {
-    return this.app().fetch(req)
+    return this.app().fetch(req, this.env)
   }
 
   webSocketMessage(ws: WebSocket, msg: string | ArrayBuffer) {
-    // @ts-expect-error missing in types
+    // @ts-expect-error Cloudflare specific
     const attachment: WsAttachment = ws.deserializeAttachment()
     const ctx: WsMsgContext<WsAttachment> = { ws, msg, attachment }
     switch (attachment.t) {
@@ -472,19 +617,25 @@ export class DOMitWorker implements DurableObject {
       case 'status': {
         const id = data.message.value.id
         const status = data.message.value.status
-        for (const t of attachment.q) {
-          if (t[0] === id) {
-            t[1] = status
+        for (const task of attachment.q) {
+          if (task[0] === id) {
+            task[1] = status
 
-            const listeners = this.state.getWebSockets(`ls:${t[0]}`)
-            for (const listener of listeners) {
-              listener.send(JSON.stringify({
-                type: 'status',
-                status,
-              } satisfies QueryV1Message))
-            }
+            const listeners = this.state.getWebSockets(`ls:${task[0]}`)
+            const groupListeners = task[3].map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
 
-            // @ts-expect-error missing in types
+            const data = {
+              type: 'status',
+              status,
+            } as const
+            const msg = JSON.stringify(data satisfies QueryV1Message)
+            for (const listener of listeners)
+              listener.send(msg)
+            const gmsg = JSON.stringify({ id: task[0], ...data } satisfies GroupQueryV1Message)
+            for (const listener of groupListeners)
+              listener.send(gmsg)
+
+            // @ts-expect-error Cloudflare specific
             ws.serializeAttachment(attachment)
 
             return
@@ -509,6 +660,7 @@ export class DOMitWorker implements DurableObject {
         attachment.q.splice(tIndex, 1)
 
         const listeners = this.state.getWebSockets(`ls:${id}`)
+        const groupListeners = task[3].map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
 
         try {
           const updateResult = await this.env.DB
@@ -522,30 +674,49 @@ export class DOMitWorker implements DurableObject {
           if (!updateResult)
             throw new Error('Task not found')
 
-          const msg = JSON.stringify({
+          const data = {
             type: 'result',
             result: {
               translation_mask: hasTranslationMask
                 ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
                 : undefined,
             },
-          } satisfies QueryV1Message)
+          } as const
+          const msg = JSON.stringify(data satisfies QueryV1Message)
           for (const listener of listeners) {
             if (success)
               listener.send(msg)
             // if not successful, the listener would already receive an error status
             listener.close(1000, 'Done')
           }
+          const gmsg = JSON.stringify({ id, ...data } satisfies GroupQueryV1Message)
+          for (const listener of groupListeners) {
+            if (success)
+              listener.send(gmsg)
+          }
         }
         catch (err) {
           console.error(String(err instanceof Error ? err.stack : err))
           // pretend the task was errored out
+          const data = {
+            type: 'error',
+            error: 'error-db',
+          } as const
+          const msg = JSON.stringify(data satisfies QueryV1Message)
           for (const listener of listeners) {
-            listener.send(JSON.stringify({
-              type: 'error',
-              error: 'error-db',
-            } satisfies QueryV1Message))
+            listener.send(msg)
             listener.close(1011, 'Database error')
+          }
+          const gmsg = JSON.stringify({ id, ...data } satisfies GroupQueryV1Message)
+          for (const listener of groupListeners)
+            listener.send(gmsg)
+        }
+
+        for (const group of task[3]) {
+          if (await this.decActiveGroup(group)) {
+            const groupListeners = this.state.getWebSockets(`lsg:${group}`)
+            for (const listener of groupListeners)
+              listener.close(1000, 'Done')
           }
         }
 
@@ -569,7 +740,7 @@ export class DOMitWorker implements DurableObject {
   }
 
   webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
-    // @ts-expect-error missing in types
+    // @ts-expect-error Cloudflare specific
     const attachment: WsAttachment = ws.deserializeAttachment()
     const ctx: WsCloseContext<WsAttachment> = { ws, code, reason, wasClean, attachment }
     switch (attachment.t) {
@@ -592,14 +763,29 @@ export class DOMitWorker implements DurableObject {
       console.error(String(err instanceof Error ? err.stack : err))
     }
 
-    for (const t of attachment.q) {
-      const listeners = this.state.getWebSockets(`ls:${t[0]}`)
+    for (const task of attachment.q) {
+      const listeners = this.state.getWebSockets(`ls:${task[0]}`)
+      const groupListeners = task[3].map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
+
+      const data = {
+        type: 'error',
+        error: 'error-worker',
+      } as const
+      const msg = JSON.stringify(data satisfies QueryV1Message)
       for (const listener of listeners) {
-        listener.send(JSON.stringify({
-          type: 'error',
-          error: 'error-worker',
-        } satisfies QueryV1Message))
+        listener.send(msg)
         listener.close(1011, 'Worker error')
+      }
+      const gmsg = JSON.stringify({ id: task[0], ...data } satisfies GroupQueryV1Message)
+      for (const listener of groupListeners)
+        listener.send(gmsg)
+
+      for (const group of task[3]) {
+        if (await this.decActiveGroup(group)) {
+          const groupListeners = this.state.getWebSockets(`lsg:${group}`)
+          for (const listener of groupListeners)
+            listener.close(1000, 'Done')
+        }
       }
     }
   }

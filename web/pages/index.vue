@@ -182,12 +182,12 @@ async function upload() {
           else if (data.type === 'error') {
             errorId.value = data.error_id ?? 'undefined'
             socket.close()
-            reject()
+            reject(new Error('error'))
           }
           else if (data.type === 'not_found') {
             errorId.value = 'not_found'
             socket.close()
-            reject()
+            reject(new Error('not_found'))
           }
         }
         catch (e) {

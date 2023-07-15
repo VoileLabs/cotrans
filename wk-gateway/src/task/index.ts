@@ -7,6 +7,18 @@ import { upload } from './upload'
 export const taskApp = new Hono<{ Bindings: Bindings }>()
   .post('/upload/v1', upload)
   .put('/upload/v1', upload)
+  .get('/group/:group/event/v1', async ({ env, req }) => {
+    const group = req.param('group')
+
+    if (req.header('Upgrade') !== 'websocket')
+      throw new Error('Not a websocket request')
+
+    const mitWorkerId = env.doMitWorker.idFromName('default')
+    return await env.doMitWorker
+      .get(mitWorkerId, { locationHint: 'enam' })
+      .fetch(`https://fake-host/group/event/${group}`, req.raw)
+      .then(res => new Response(res.body, res))
+  })
   .get('/:id/status/v1', async ({ env, req, json }) => {
     const id = req.param('id')
 
