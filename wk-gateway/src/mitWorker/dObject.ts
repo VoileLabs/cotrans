@@ -58,10 +58,18 @@ interface WsListenerAttachment {
 
 type WsAttachment = WsWorkerAttachment | WsListenerAttachment
 
-interface WsHandlerContext<T> {
+interface WsMsgContext<T> {
   ws: WebSocket
   msg: string | ArrayBuffer
   attachment: T
+}
+
+interface WsCloseContext<T> {
+  ws: WebSocket
+  attachment: T
+  code: number
+  reason: string
+  wasClean: boolean
 }
 
 const SubmitParam = z.object({
@@ -358,13 +366,13 @@ export class DOMitWorker implements DurableObject {
   webSocketMessage(ws: WebSocket, msg: string | ArrayBuffer) {
     // @ts-expect-error missing in types
     const attachment: WsAttachment = ws.deserializeAttachment()
-    const ctx: WsHandlerContext<WsAttachment> = { ws, msg, attachment }
+    const ctx: WsMsgContext<WsAttachment> = { ws, msg, attachment }
     switch (attachment.t) {
       case 'wk': {
-        return this.handleWorkerMessage(ctx as WsHandlerContext<WsWorkerAttachment>)
+        return this.handleWorkerMessage(ctx as WsMsgContext<WsWorkerAttachment>)
       }
       case 'ls': {
-        return this.handleListenerMessage(ctx as WsHandlerContext<WsListenerAttachment>)
+        return this.handleListenerMessage(ctx as WsMsgContext<WsListenerAttachment>)
       }
       default: {
         ws.close(1011, 'Unknown attachment type')
@@ -372,7 +380,7 @@ export class DOMitWorker implements DurableObject {
     }
   }
 
-  async handleWorkerMessage({ ws, msg, attachment }: WsHandlerContext<WsWorkerAttachment>) {
+  async handleWorkerMessage({ ws, msg, attachment }: WsMsgContext<WsWorkerAttachment>) {
     if (typeof msg === 'string') {
       ws.close(1011, 'Invalid message')
       return
@@ -388,8 +396,12 @@ export class DOMitWorker implements DurableObject {
             t[1] = status
 
             const listeners = this.state.getWebSockets(`ls:${t[0]}`)
-            for (const listener of listeners)
-              listener.send(JSON.stringify({ type: 'status', status }))
+            for (const listener of listeners) {
+              listener.send(JSON.stringify({
+                type: 'status',
+                status,
+              } satisfies QueryV1Message))
+            }
 
             // @ts-expect-error missing in types
             ws.serializeAttachment(attachment)
@@ -428,29 +440,32 @@ export class DOMitWorker implements DurableObject {
             .first<{ id: number } | null>()
           if (!updateResult)
             throw new Error('Task not found')
+
+          const msg = JSON.stringify({
+            type: 'result',
+            result: {
+              translation_mask: hasTranslationMask
+                ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
+                : undefined,
+            },
+          } satisfies QueryV1Message)
+          for (const listener of listeners) {
+            if (success)
+              listener.send(msg)
+            // if not successful, the listener would already receive an error status
+            listener.close(1000, 'Done')
+          }
         }
         catch (err) {
           console.error(String(err instanceof Error ? err.stack : err))
           // pretend the task was errored out
           for (const listener of listeners) {
-            listener.send(JSON.stringify({ type: 'status', status: 'error-db' }))
+            listener.send(JSON.stringify({
+              type: 'error',
+              error: 'error-db',
+            } satisfies QueryV1Message))
             listener.close(1011, 'Database error')
           }
-        }
-
-        for (const listener of listeners) {
-          if (success) {
-            listener.send(JSON.stringify({
-              type: 'result',
-              result: {
-                translation_mask: hasTranslationMask
-                  ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
-                  : undefined,
-              },
-            }))
-          }
-          // if not successful, the listener would already receive an error status
-          listener.close(1000, 'Done')
         }
 
         // find the next task
@@ -464,9 +479,52 @@ export class DOMitWorker implements DurableObject {
     }
   }
 
-  async handleListenerMessage({ ws }: WsHandlerContext<WsListenerAttachment>) {
+  async handleListenerMessage({ ws }: WsMsgContext<WsListenerAttachment>) {
     // listeners cannot send messages for now
     ws.close(1011, 'Invalid message')
+  }
+
+  webSocketError(ws: WebSocket, err: any) {
+  }
+
+  webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
+    // @ts-expect-error missing in types
+    const attachment: WsAttachment = ws.deserializeAttachment()
+    const ctx: WsCloseContext<WsAttachment> = { ws, code, reason, wasClean, attachment }
+    switch (attachment.t) {
+      case 'wk': {
+        return this.handleWorkerClose(ctx as WsCloseContext<WsWorkerAttachment>)
+      }
+      case 'ls': {
+        return this.handleListenerClose(ctx as WsCloseContext<WsListenerAttachment>)
+      }
+    }
+  }
+
+  async handleWorkerClose({ attachment }: WsCloseContext<WsWorkerAttachment>) {
+    try {
+      const delQuery = this.env.DB.prepare('UPDATE task SET state = ? WHERE id = ?')
+      // we don't need to await here, the object will not exit
+      this.env.DB.batch(attachment.q.map(t => delQuery.bind(dbEnum.taskState.error, t[0])))
+    }
+    catch (err) {
+      console.error(String(err instanceof Error ? err.stack : err))
+    }
+
+    for (const t of attachment.q) {
+      const listeners = this.state.getWebSockets(`ls:${t[0]}`)
+      for (const listener of listeners) {
+        listener.send(JSON.stringify({
+          type: 'error',
+          error: 'error-worker',
+        } satisfies QueryV1Message))
+        listener.close(1011, 'Worker error')
+      }
+    }
+  }
+
+  async handleListenerClose({ ws }: WsCloseContext<WsListenerAttachment>) {
+    // no-op
   }
 }
 

@@ -38,6 +38,7 @@ export interface QueryV1MessageResult {
 export interface QueryV1MessageError {
   type: 'error'
   error_id?: string | null
+  error?: string | null
 }
 export interface QueryV1MessageNotFound {
   type: 'not_found'
