@@ -5,11 +5,12 @@ import { HTTPException } from 'hono/http-exception'
 import type { Bindings, QueryV1Message } from '../types'
 import { WebSocketMessage } from '../protoGen/gateway.mit_pb'
 import { dbEnum } from '../db'
+import { createSortableId } from './id'
 
 const QUEUE_CAP = 40
-// const QUEUE_GC_TARGET = 20
-// const QUEUE_PICKUP = 4
-// const QUEYE_PICKUP_COUNT = 4
+const QUEUE_GC_TARGET = 20
+const QUEUE_GC_PICKUP = 4
+const QUEYE_GC_PICKUP_COUNT = 4
 
 function memo<T>(fn: () => NonNullable<T>): () => NonNullable<T> {
   let cache: T
@@ -146,18 +147,30 @@ export class DOMitWorker implements DurableObject {
 
         const queue = await this.getQueue()
 
-        // special case: if the task id is already in the queue,
-        // we replace it with the new task.
-        // duplication can happen if there's a force retry request submitted
-        // while the old task is still in the queue.
+        // special case: if the task id is already in the queue, replace it with the new task.
+        // duplication can happen if there's a force retry request submitted while
+        // the old task is still in the queue.
         const pos = queue.findIndex(task => task.id === param.id)
-        if (pos !== -1)
+        if (pos !== -1) {
           queue[pos] = task
-        // if the queue is full, we reject the request
-        else if (queue.length >= QUEUE_CAP)
-          throw new Error('Queue is full')
-        else
+        }
+        else {
+          if (queue.length >= QUEUE_CAP && !await this.gcQueue())
+            // if the queue is full, reject the request
+            return json({ id: null, error: 'queue-full' }, { status: 503 })
+
+          // check if the task is in the backlog
+          // will task be pushed to backlog and immediately picked up?
+          // no, exsiting tasks don't go to this branch
+          const sid = await this.state.storage.get<string>(`gct:${task.id}`)
+          if (sid) {
+            // no need to await here, since there's a put queue after
+            this.state.storage.delete(`gct:${task.id}`)
+            this.state.storage.delete(`gcs:${sid}`)
+          }
+
           queue.push(task)
+        }
 
         await this.putQueue(queue, false)
 
@@ -185,7 +198,7 @@ export class DOMitWorker implements DurableObject {
 
         if (status.type === 'not_found')
           // special case: if the task is not found,
-          // we return a json response to let the upstream worker know.
+          // return a json response to let the upstream worker know.
           return json({ type: 'not_found' })
 
         const pair = new WebSocketPair()
@@ -221,7 +234,7 @@ export class DOMitWorker implements DurableObject {
     return this.queue
   }
 
-  async putQueue(queue: MitTask[], flush = true) {
+  async putQueue(queue: MitTask[], flush: boolean) {
     this.queue = queue
     this.queueDirty = true
     if (flush)
@@ -233,6 +246,71 @@ export class DOMitWorker implements DurableObject {
       await this.state.storage.put('queue', this.queue)
       this.queueDirty = false
     }
+  }
+
+  async gcQueue(force = false): Promise<boolean> {
+    const queue = await this.getQueue()
+    if (!force && queue.length <= QUEUE_GC_TARGET)
+      return false
+
+    const listeners = this.state
+      .getWebSockets('ls')
+      .map(ws => ({
+        // @ts-expect-error missing in types
+        attachment: ws.deserializeAttachment() as WsListenerAttachment,
+        ws,
+      }))
+
+    const newQueue = []
+    let left = queue.length - QUEUE_GC_TARGET
+    for (let i = 0; i < queue.length; i++) {
+      if (left <= 0) {
+        newQueue.push(...queue.slice(i))
+        break
+      }
+
+      const task = queue[i]
+      // keep tasks with listeners
+      if (listeners.some(({ attachment }) => attachment.tid === task.id)) {
+        newQueue.push(task)
+        continue
+      }
+
+      // put task in backlog
+      const sid = createSortableId()
+      // we'll await later
+      this.state.storage.put(`gcs:${sid}`, task)
+      // we need two indexes, another for deletion on submit
+      this.state.storage.put(`gct:${task.id}`, sid)
+
+      left--
+    }
+    if (newQueue.length !== queue.length) {
+      // force flush here to ensure the put above is being committed
+      await this.putQueue(newQueue, true)
+      return true
+    }
+
+    return false
+  }
+
+  async gcPickup() {
+    const queue = await this.getQueue()
+    if (queue.length > QUEUE_GC_PICKUP)
+      return
+
+    const tasks = await this.state.storage.list<MitTask>({
+      prefix: 'gcs:',
+      limit: QUEYE_GC_PICKUP_COUNT,
+    })
+    if (tasks.size === 0)
+      return
+
+    const newTasks = Array.from(tasks.values())
+    const newQueue = queue.concat(newTasks)
+    this.state.storage.delete(Array.from(tasks.keys()))
+    this.state.storage.delete(newTasks.map(task => `gct:${task.id}`))
+    await this.putQueue(newQueue, true)
   }
 
   async findTaskStatus(id: string): Promise<QueryV1Message> {
@@ -257,9 +335,12 @@ export class DOMitWorker implements DurableObject {
     return { type: 'not_found' }
   }
 
-  async assignTasks(workers = this.state.getWebSockets('wk')) {
+  async assignTasks(workers = this.state.getWebSockets('wk'), pickup = true) {
     if (workers.length === 0)
       return
+
+    if (pickup)
+      await this.gcPickup()
 
     let workerWithAttachments = workers.map((ws) => {
       // @ts-expect-error missing in types
@@ -356,7 +437,7 @@ export class DOMitWorker implements DurableObject {
 
     // since skipped tasks are always before the remaining queue,
     // we can just append them to the start
-    this.putQueue(skipped.concat(queue))
+    this.putQueue(skipped.concat(queue), true)
   }
 
   fetch(req: Request): Response | Promise<Response> {
@@ -504,7 +585,7 @@ export class DOMitWorker implements DurableObject {
   async handleWorkerClose({ attachment }: WsCloseContext<WsWorkerAttachment>) {
     try {
       const delQuery = this.env.DB.prepare('UPDATE task SET state = ? WHERE id = ?')
-      // we don't need to await here, the object will not exit
+      // no need to await here, the object will not exit
       this.env.DB.batch(attachment.q.map(t => delQuery.bind(dbEnum.taskState.error, t[0])))
     }
     catch (err) {
