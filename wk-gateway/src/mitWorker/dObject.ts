@@ -705,25 +705,28 @@ export class DOMitWorker implements DurableObject {
           if (!updateResult)
             throw new Error('Task not found')
 
-          const data = {
-            type: 'result',
-            result: {
-              translation_mask: hasTranslationMask
-                ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
-                : BLANK_PNG,
-            },
-          } as const
-          const msg = JSON.stringify(data satisfies QueryV1Message)
-          for (const listener of listeners) {
-            if (success)
+          if (success) {
+            const data = {
+              type: 'result',
+              result: {
+                translation_mask: hasTranslationMask
+                  ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
+                  : BLANK_PNG,
+              },
+            } as const
+            const msg = JSON.stringify(data satisfies QueryV1Message)
+            for (const listener of listeners) {
               listener.send(msg)
-            // if not successful, the listener would already receive an error status
-            listener.close(1000, 'Done')
-          }
-          const gmsg = JSON.stringify({ id, ...data } satisfies GroupQueryV1Message)
-          for (const listener of groupListeners) {
-            if (success)
+              listener.close(1000, 'Done')
+            }
+            const gmsg = JSON.stringify({ id, ...data } satisfies GroupQueryV1Message)
+            for (const listener of groupListeners)
               listener.send(gmsg)
+          }
+          else {
+            for (const listener of listeners)
+              // if not successful, the listener would already receive an error status
+              listener.close(1011, 'Done')
           }
         }
         catch (err) {
@@ -743,12 +746,13 @@ export class DOMitWorker implements DurableObject {
             listener.send(gmsg)
         }
 
-        for (const group of task[3]) {
-          if (await this.decActiveGroup(group)) {
-            const groupListeners = this.state.getWebSockets(`lsg:${group}`)
-            for (const listener of groupListeners)
-              listener.close(1000, 'Done')
-          }
+        for (const group of task[3])
+          await this.decActiveGroup(group)
+
+        for (const { ws, attachment } of withAttachment<WsGroupListenerAttachment>(groupListeners)) {
+          attachment.ga = Date.now()
+          // @ts-expect-error Cloudflare specific
+          ws.serializeAttachment(attachment)
         }
 
         // @ts-expect-error Cloudflare specific
@@ -819,12 +823,13 @@ export class DOMitWorker implements DurableObject {
       for (const listener of groupListeners)
         listener.send(gmsg)
 
-      for (const group of task[3]) {
-        if (await this.decActiveGroup(group)) {
-          const groupListeners = this.state.getWebSockets(`lsg:${group}`)
-          for (const listener of groupListeners)
-            listener.close(1000, 'Done')
-        }
+      for (const group of task[3])
+        await this.decActiveGroup(group)
+
+      for (const { ws, attachment } of withAttachment<WsGroupListenerAttachment>(groupListeners)) {
+        attachment.ga = Date.now()
+        // @ts-expect-error Cloudflare specific
+        ws.serializeAttachment(attachment)
       }
     }
   }
