@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import type { Bindings, GroupQueryV1Message, QueryV1Message } from '../types'
 import { WebSocketMessage } from '../protoGen/gateway.mit_pb'
 import { dbEnum } from '../db'
+import { memo } from '../utils'
 import { createSortableId } from './id'
 import { TTLSet } from './ttl'
 
@@ -14,11 +15,6 @@ const QUEUE_GC_PICKUP = 4
 const QUEUE_GC_PICKUP_COUNT = 4
 const QUEUE_KEEP_ALIVE_TIMEOUT = 5 * 1000
 const TASK_GROUP_LIMIT = 4
-
-function memo<T>(fn: () => NonNullable<T>): () => NonNullable<T> {
-  let cache: T
-  return () => cache ??= fn()
-}
 
 function sendAndClose(data: unknown) {
   const pair = new WebSocketPair()

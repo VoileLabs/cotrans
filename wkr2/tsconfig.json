@@ -7,7 +7,6 @@
     "types": ["@cloudflare/workers-types"],
     "strict": true,
     "esModuleInterop": true,
-    "incremental": false,
     "skipLibCheck": true,
     "moduleResolution": "node",
     "jsx": "preserve",

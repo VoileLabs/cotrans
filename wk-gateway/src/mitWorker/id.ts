@@ -2,6 +2,8 @@
 // with some help from ChatGPT, obviously
 // "but it's not used anywhere?!" "shut up."
 
+import { memo } from '../utils'
+
 const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 
 function convertToBase62(num: number) {
@@ -15,10 +17,12 @@ function convertToBase62(num: number) {
 
 let sequenceNumber = 0
 
-// Generating a unique random machine identifier using crypto.getRandomValues
-const array = new Uint8Array(3)
-crypto.getRandomValues(array)
-const machineId = Array.from(array).map(b => (`0${b.toString(16)}`).slice(-2)).join('')
+const machineId = memo(() => {
+  // Generating a unique random machine identifier using crypto.getRandomValues
+  const array = new Uint8Array(3)
+  crypto.getRandomValues(array)
+  return Array.from(array).map(b => (`0${b.toString(16)}`).slice(-2)).join('')
+})
 
 export function createSortableId() {
   const timestamp = new Date().getTime()
@@ -30,5 +34,5 @@ export function createSortableId() {
   const base62Sequence = convertToBase62(sequenceNumber).padStart(2, '0')
 
   // Combine timestamp, machineId, and sequenceNumber
-  return base62Timestamp + machineId + base62Sequence
+  return base62Timestamp + machineId() + base62Sequence
 }
