@@ -669,7 +669,6 @@ export class DOMitWorker implements DurableObject {
 
             // @ts-expect-error Cloudflare specific
             ws.serializeAttachment(attachment)
-
             return
           }
         }
@@ -755,6 +754,8 @@ export class DOMitWorker implements DurableObject {
         // find the next task
         await this.assignTasks()
 
+        // @ts-expect-error Cloudflare specific
+        ws.serializeAttachment(attachment)
         break
       }
       default: {

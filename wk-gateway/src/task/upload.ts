@@ -32,7 +32,7 @@ const DEFAULT_DIRECTION = {
 }
 
 const ParamBase = z.object({
-  retry: z.boolean().optional(),
+  retry: z.boolean().or(z.string().transform(v => v === 'true')).optional(),
   group: z.string().max(14).optional(),
 
   mime: z.string().optional(),
@@ -84,6 +84,8 @@ export async function parseBody(req: HonoRequest): Promise<z.infer<typeof Param>
 
 export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }) => {
   const param = await parseBody(req)
+  // eslint-disable-next-line no-console
+  console.debug('param', param)
 
   const retry = param.retry ?? req.method === 'POST'
 
@@ -102,12 +104,14 @@ export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }
     }).then((res) => {
       if (Number.parseInt(res.headers.get('content-length')!) > FILE_SIZE_LIMIT)
         throw new Error('File too large')
+      param.mime = param.mime || res.headers.get('content-type') || undefined
       return res.blob()
     })
 
   const uploadForm = new FormData()
   uploadForm.append('file', file)
-  uploadForm.append('mime', param.mime ?? file.type)
+  if (param.mime)
+    uploadForm.append('mime', param.mime)
 
   const sourceInfo = await env.image.fetch('https://fake-host/', {
     method: 'POST',
