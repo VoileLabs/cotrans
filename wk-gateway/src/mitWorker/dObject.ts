@@ -81,12 +81,22 @@ interface WsListenerAttachment {
   // type: listener
   t: 'ls'
   // task_id
-  tid?: string
-  // group
-  g?: string
+  tid: string
 }
 
-type WsAttachment = WsWorkerAttachment | WsListenerAttachment
+interface WsGroupListenerAttachment {
+  // type: group_listener
+  t: 'lsg'
+  // group
+  g: string
+  // group_time_advancement
+  ga: number
+}
+
+type WsAttachment =
+  WsWorkerAttachment
+  | WsListenerAttachment
+  | WsGroupListenerAttachment
 
 interface WsMsgContext<T> {
   ws: WebSocket
@@ -116,6 +126,7 @@ export type MitSubmitParam = z.infer<typeof SubmitParam>
 
 export class DOMitWorker implements DurableObject {
   objectCreated = Date.now()
+  lastSocketCleanup = this.objectCreated
 
   queueCache: MitTask[] | undefined
   queueDirty = false
@@ -126,6 +137,15 @@ export class DOMitWorker implements DurableObject {
   jwt_public_key = memo(() => importSPKI(this.env.JWT_PUBLIC_KEY, 'ES256'))
 
   app = memo(() => new Hono<{ Bindings: Bindings }>()
+    .use('*', async (c, next) => {
+      if (this.lastSocketCleanup === this.objectCreated
+        || Date.now() - this.lastSocketCleanup > 30 * 1000) {
+        this.lastSocketCleanup = Date.now()
+        Promise.resolve().then(() => this.cleanupSockets())
+      }
+
+      await next()
+    })
     .get('/status', async ({ json }) => {
       const queue = await this.getQueue()
       const workers = this.state.getWebSockets('wk')
@@ -229,16 +249,18 @@ export class DOMitWorker implements DurableObject {
 
       const pair = new WebSocketPair()
 
-      if (!(await this.getActiveGroups()).has(group)) {
-        // @ts-expect-error Cloudflare specific
-        pair[1].accept()
-        pair[1].close(1000, 'Group not found')
-        return new Response(null, { status: 101, webSocket: pair[0] })
-      }
+      // because group listener should connect before the task is submitted,
+      // we can't deny it here
+      // if (!(await this.getActiveGroups()).has(group)) {
+      //   // @ts-expect-error Cloudflare specific
+      //   pair[1].accept()
+      //   pair[1].close(1000, 'Group not found')
+      //   return new Response(null, { status: 101, webSocket: pair[0] })
+      // }
 
-      this.state.acceptWebSocket(pair[1], ['ls', `lsg:${group}`])
+      this.state.acceptWebSocket(pair[1], ['lsg', `lsg:${group}`])
 
-      const attachment: WsListenerAttachment = { t: 'ls', g: group }
+      const attachment: WsGroupListenerAttachment = { t: 'lsg', g: group, ga: Date.now() }
       // @ts-expect-error Cloudflare specific
       pair[1].serializeAttachment(attachment)
 
@@ -355,6 +377,15 @@ export class DOMitWorker implements DurableObject {
     const map = await this.getActiveGroups()
     const count = map.get(group) ?? 0
     map.set(group, count + 1)
+
+    // since this method can be considered as a "renew" for the group,
+    // we'll renew listeners attached to the group as well
+    const groupListeners = withAttachment<WsGroupListenerAttachment>(this.state.getWebSockets(`lsg:${group}`))
+    for (const { ws, attachment } of groupListeners) {
+      attachment.ga = Date.now()
+      // @ts-expect-error Cloudflare specific
+      ws.serializeAttachment(attachment)
+    }
   }
 
   async decActiveGroup(group: string): Promise<boolean> {
@@ -373,12 +404,11 @@ export class DOMitWorker implements DurableObject {
   isTaskAlive(
     task: MitTask,
     listeners = withAttachment<WsListenerAttachment>(this.state.getWebSockets('ls')),
+    groupListeners = withAttachment<WsGroupListenerAttachment>(this.state.getWebSockets('lsg')),
   ): boolean {
     return this.keepAliveCache.has(task.id)
-      || listeners.some(({ attachment }) =>
-        attachment.tid === task.id
-        || (attachment.g && task.group.includes(attachment.g)),
-      )
+      || listeners.some(({ attachment }) => attachment.tid === task.id)
+      || groupListeners.some(({ attachment }) => task.group.includes(attachment.g))
   }
 
   async gcQueue(force = false, skipGroup: string[] = []): Promise<boolean> {
@@ -387,6 +417,7 @@ export class DOMitWorker implements DurableObject {
       return false
 
     const listeners = withAttachment<WsListenerAttachment>(this.state.getWebSockets('ls'))
+    const groupListeners = withAttachment<WsGroupListenerAttachment>(this.state.getWebSockets('lsg'))
 
     const newQueue = []
     let left = queue.length - QUEUE_GC_TARGET
@@ -402,7 +433,7 @@ export class DOMitWorker implements DurableObject {
         continue
 
       // keep tasks with listeners
-      if (this.isTaskAlive(task, listeners)) {
+      if (this.isTaskAlive(task, listeners, groupListeners)) {
         newQueue.push(task)
         continue
       }
@@ -596,7 +627,12 @@ export class DOMitWorker implements DurableObject {
       case 'ls': {
         return this.handleListenerMessage(ctx as WsMsgContext<WsListenerAttachment>)
       }
+      case 'lsg':{
+        return this.handleGroupListenerMessage(ctx as WsMsgContext<WsGroupListenerAttachment>)
+      }
       default: {
+        // eslint-disable-next-line unused-imports/no-unused-vars
+        const never: never = attachment
         ws.close(1011, 'Unknown attachment type')
       }
     }
@@ -732,6 +768,11 @@ export class DOMitWorker implements DurableObject {
     ws.close(1011, 'Invalid message')
   }
 
+  async handleGroupListenerMessage({ ws }: WsMsgContext<WsGroupListenerAttachment>) {
+    // listeners cannot send messages for now
+    ws.close(1011, 'Invalid message')
+  }
+
   webSocketError(ws: WebSocket, err: any) {
   }
 
@@ -788,6 +829,20 @@ export class DOMitWorker implements DurableObject {
 
   async handleListenerClose({ ws }: WsCloseContext<WsListenerAttachment>) {
     // no-op
+  }
+
+  async cleanupSockets() {
+    // cleanup stale group listeners
+    const now = Date.now()
+    const groupListeners = withAttachment<WsGroupListenerAttachment>(this.state.getWebSockets('lsg'))
+    for (const { ws, attachment } of groupListeners) {
+      const hasActiveGroup = (await this.getActiveGroups()).has(attachment.g)
+
+      if (!hasActiveGroup && now - attachment.ga > 60 * 1000) {
+        ws.close(1011, 'Timeout')
+        continue
+      }
+    }
   }
 }
 
