@@ -5,7 +5,6 @@ compatibility_flags = []
 workers_dev = false
 usage_model = 'bundled'
 services = [
-  { binding = "image", service = "cotrans-wk-image" },
   { binding = "wkr2_private", service = "cotrans-wkr2-private" },
   { binding = "wkr2_public", service = "cotrans-wkr2-public" },
 ]
@@ -13,6 +12,7 @@ services = [
 [durable_objects]
 bindings = [
   { name = "doMitWorker", class_name = "DOMitWorker", script_name = "cotrans-wk-gateway-domitworker" },
+  { name = "doImage", class_name = "DOImage", script_name = "cotrans-wk-image" },
 ]
 
 [[d1_databases]]

@@ -113,17 +113,18 @@ export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }
   if (param.mime)
     uploadForm.append('mime', param.mime)
 
-  const sourceInfo = await env.image.fetch('https://fake-host/', {
-    method: 'POST',
-    body: uploadForm,
-  }).then(res => res.json<{
+  const sourceInfo = await ofetch<{
     key: string
     width: number
     height: number
     size: number
     hash: string
     sha: string
-  }>())
+  }>('https://fake-host/', {
+    fetcher: env.doImage.get(env.doImage.newUniqueId()),
+    method: 'POST',
+    body: uploadForm,
+  })
 
   const tempSourceId = createId()
   const sourceResult = await env.DB

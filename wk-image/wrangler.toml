@@ -5,6 +5,13 @@ compatibility_flags = []
 usage_model = 'unbound'
 workers_dev = false
 
+[[migrations]]
+tag = "v1"
+new_classes = ["DOImage"]
+
+[durable_objects]
+bindings = [{ name = "doImage", class_name = "DOImage" }]
+
 [[r2_buckets]]
 binding = 'BUCKET_PRI'
 bucket_name = 'cotrans-private'

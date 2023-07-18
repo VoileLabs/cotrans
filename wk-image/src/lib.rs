@@ -1,5 +1,6 @@
 use std::{io::Cursor, num::NonZeroU32};
 
+use console_error_panic_hook::set_once as set_panic_hook;
 use fast_image_resize as fr;
 use image::{
   codecs::png::{CompressionType, PngEncoder},
@@ -28,9 +29,20 @@ pub fn hash_image(image: &DynamicImage) -> String {
   hex::encode(hash.as_bytes())
 }
 
-#[event(fetch)]
-async fn main(req: Request, env: Env, ctx: Context) -> Result<Response> {
-  handle(req, env, ctx).await
+#[durable_object]
+pub struct DOImage {
+  env: Env,
+}
+
+#[durable_object]
+impl DurableObject for DOImage {
+  fn new(state: State, env: Env) -> Self {
+    Self { env }
+  }
+
+  async fn fetch(&mut self, req: Request) -> Result<Response> {
+    handle(req, &self.env).await
+  }
 }
 
 #[derive(Serialize)]
@@ -43,9 +55,10 @@ struct ResponseJson {
   sha: String,
 }
 
-async fn handle(mut req: Request, env: Env, ctx: Context) -> Result<Response> {
+async fn handle(mut req: Request, env: &Env) -> Result<Response> {
+  set_panic_hook();
   let worker: web_sys::WorkerGlobalScope = js_sys::global().unchecked_into();
-  let bucket_pri: R2Bucket = js_sys::Reflect::get(&env, &JsValue::from("BUCKET_PRI"))
+  let bucket_pri: R2Bucket = js_sys::Reflect::get(env, &JsValue::from("BUCKET_PRI"))
     .unwrap()
     .unchecked_into();
 
@@ -61,7 +74,9 @@ async fn handle(mut req: Request, env: Env, ctx: Context) -> Result<Response> {
     _ => None,
   };
 
-  let cursor = Cursor::new(file.clone());
+  drop(form);
+
+  let cursor = Cursor::new(file);
   let mut image = match mime {
     Some(mime) if !mime.is_empty() => {
       let Some(format) = ImageFormat::from_mime_type(mime) else {

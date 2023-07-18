@@ -14,7 +14,7 @@ export type Bindings = {
 
   DB: D1Database
   doMitWorker: DurableObjectNamespace
-  image: Fetcher
+  doImage: DurableObjectNamespace
   wkr2_private: Fetcher
   wkr2_public: Fetcher
 }

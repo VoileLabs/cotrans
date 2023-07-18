@@ -22,11 +22,11 @@ export async function resizeToSubmit(blob: Blob, suffix: string): Promise<{ blob
   const w = img.width
   const h = img.height
 
-  if (w <= 6000 && h <= 6000)
+  if (w <= 4096 && h <= 4096)
     return { blob, suffix }
 
   // resize to less than 6k
-  const scale = Math.min(6000 / w, 6000 / h)
+  const scale = Math.min(4096 / w, 4096 / h)
   const width = Math.floor(w * scale)
   const height = Math.floor(h * scale)
 
