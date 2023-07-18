@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { ofetch } from 'ofetch'
 import type { Bindings, QueryV1Message, QueryV1MessageNotFound } from '../types'
 import { dbEnum } from '../db'
+import { BLANK_PNG } from '../utils'
 import { upload } from './upload'
 
 export const taskApp = new Hono<{ Bindings: Bindings }>()
@@ -42,7 +43,9 @@ export const taskApp = new Hono<{ Bindings: Bindings }>()
       return json({
         type: 'result',
         result: {
-          translation_mask: `${env.WKR2_PUBLIC_EXPOSED_BASE}/${dbResult.translation_mask}`,
+          translation_mask: dbResult.translation_mask
+            ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${dbResult.translation_mask}`
+            : BLANK_PNG,
         },
       } satisfies QueryV1Message)
     }
@@ -75,7 +78,7 @@ export const taskApp = new Hono<{ Bindings: Bindings }>()
       const dbResult = await env.DB
         .prepare('SELECT state, translation_mask FROM task WHERE id = ?')
         .bind(id)
-        .first<{ state: number; translation_mask: string } | null>()
+        .first<{ state: number; translation_mask: string | null } | null>()
 
       const sendAndClose = (data: QueryV1Message) => {
         const pair = new WebSocketPair()
@@ -93,7 +96,9 @@ export const taskApp = new Hono<{ Bindings: Bindings }>()
         return sendAndClose({
           type: 'result',
           result: {
-            translation_mask: `${env.WKR2_PUBLIC_EXPOSED_BASE}/${dbResult.translation_mask}`,
+            translation_mask: dbResult.translation_mask
+              ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${dbResult.translation_mask}`
+              : BLANK_PNG,
           },
         })
       }

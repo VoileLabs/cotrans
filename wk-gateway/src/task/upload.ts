@@ -5,6 +5,7 @@ import { createId } from '@paralleldrive/cuid2'
 import type { Bindings } from '../types'
 import { dbEnum } from '../db'
 import type { MitSubmitParam } from '../mitWorker/dObject'
+import { BLANK_PNG } from '../utils'
 
 const FILE_SIZE_LIMIT = 20 * 1024 * 1024
 const WORKER_REVISION = 3
@@ -175,7 +176,9 @@ LIMIT 1
       return json({
         id: exsitingTaskResult.id,
         result: {
-          translation_mask: `${env.WKR2_PUBLIC_EXPOSED_BASE}/${exsitingTaskResult.translation_mask}`,
+          translation_mask: exsitingTaskResult.translation_mask
+            ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${exsitingTaskResult.translation_mask}`
+            : BLANK_PNG,
         },
       })
     }
@@ -198,7 +201,9 @@ RETURNING id, state, translation_mask
       return json({
         id: newTaskResult.id,
         result: {
-          translation_mask: `${env.WKR2_PUBLIC_EXPOSED_BASE}/${newTaskResult.translation_mask}`,
+          translation_mask: newTaskResult.translation_mask
+            ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${newTaskResult.translation_mask}`
+            : BLANK_PNG,
         },
       })
     }

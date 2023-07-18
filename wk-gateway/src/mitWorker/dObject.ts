@@ -5,7 +5,7 @@ import { HTTPException } from 'hono/http-exception'
 import type { Bindings, GroupQueryV1Message, QueryV1Message } from '../types'
 import { WebSocketMessage } from '../protoGen/gateway.mit_pb'
 import { dbEnum } from '../db'
-import { memo } from '../utils'
+import { BLANK_PNG, memo } from '../utils'
 import { createSortableId } from './id'
 import { TTLSet } from './ttl'
 
@@ -710,7 +710,7 @@ export class DOMitWorker implements DurableObject {
             result: {
               translation_mask: hasTranslationMask
                 ? `${this.env.WKR2_PUBLIC_EXPOSED_BASE}/${task[2]}`
-                : undefined,
+                : BLANK_PNG,
             },
           } as const
           const msg = JSON.stringify(data satisfies QueryV1Message)
@@ -751,11 +751,12 @@ export class DOMitWorker implements DurableObject {
           }
         }
 
+        // @ts-expect-error Cloudflare specific
+        ws.serializeAttachment(attachment)
+
         // find the next task
         await this.assignTasks()
 
-        // @ts-expect-error Cloudflare specific
-        ws.serializeAttachment(attachment)
         break
       }
       default: {
