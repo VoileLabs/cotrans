@@ -600,6 +600,13 @@ export class DOMitWorker implements DurableObject {
         },
       })
       ws.send(msg.toBinary())
+
+      Promise.resolve()
+        .then(() => this.env.DB
+          .prepare('UPDATE task SET last_attempted_at = ? WHERE id = ?')
+          .bind(new Date().toISOString(), task.id)
+          .run(),
+        )
     }
 
     for (const [ws, attachment] of dirtyWS) {

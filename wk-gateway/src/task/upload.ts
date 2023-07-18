@@ -30,7 +30,7 @@ const DEFAULT_DIRECTION = {
   TRK: 'h',
   UKR: 'h',
   VIN: 'h',
-}
+} as const
 
 const ParamBase = z.object({
   retry: z.boolean().or(z.string().transform(v => v === 'true')).optional(),
@@ -55,7 +55,7 @@ const ParamBase = z.object({
           return s
       }
     }),
-  translator: z.enum(['gpt3.5', 'youdao', 'baidu', 'google', 'deepl', 'papago', 'gpt3.5', 'offline', 'none', 'original']),
+  translator: z.enum(['gpt3.5', 'youdao', 'baidu', 'google', 'deepl', 'papago', 'offline', 'none', 'original']),
   size: z.enum(['S', 'M', 'L', 'X']),
 })
 
@@ -135,7 +135,14 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6)
 ON CONFLICT(file) DO UPDATE SET hash = ?2, size = ?4, width = ?5, height = ?6
 RETURNING id
 `)
-    .bind(tempSourceId, sourceInfo.hash, sourceInfo.key, sourceInfo.size, sourceInfo.width, sourceInfo.height)
+    .bind(
+      tempSourceId,
+      sourceInfo.hash,
+      sourceInfo.key,
+      sourceInfo.size,
+      sourceInfo.width,
+      sourceInfo.height,
+    )
     .first<{ id: string }>()
   const sourceId = sourceResult.id
 
@@ -150,7 +157,17 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 ON CONFLICT DO UPDATE SET state = ?9, translation_mask = NULL
 RETURNING id, state, translation_mask
 `)
-      .bind(tempTaskId, sourceId, param.target_language, param.detector, direction, param.translator, param.size, WORKER_REVISION, dbEnum.taskState.pending)
+      .bind(
+        tempTaskId,
+        sourceId,
+        dbEnum.taskLanguage[param.target_language],
+        dbEnum.taskDetector[param.detector],
+        dbEnum.taskDirection[direction],
+        dbEnum.taskTranslator[param.translator],
+        dbEnum.taskSize[param.size],
+        WORKER_REVISION,
+        dbEnum.taskState.pending,
+      )
       .first<{ id: string; state: number; translation_mask: string | null }>()
     taskId = taskResult.id
   }
@@ -169,7 +186,15 @@ WHERE
 ORDER BY last_attempted_at DESC
 LIMIT 1
 `)
-      .bind(sourceInfo.hash, param.target_language, param.detector, direction, param.translator, param.size, WORKER_REVISION)
+      .bind(
+        sourceInfo.hash,
+        dbEnum.taskLanguage[param.target_language],
+        dbEnum.taskDetector[param.detector],
+        dbEnum.taskDirection[direction],
+        dbEnum.taskTranslator[param.translator],
+        dbEnum.taskSize[param.size],
+        WORKER_REVISION,
+      )
       .first<{ id: string; state: number; translation_mask: string | null } | null>()
 
     if (exsitingTaskResult?.state === dbEnum.taskState.done) {
@@ -192,7 +217,16 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
 ON CONFLICT DO UPDATE SET dummy = 0
 RETURNING id, state, translation_mask
 `)
-      .bind(tempTaskId, sourceId, param.target_language, param.detector, direction, param.translator, param.size, WORKER_REVISION)
+      .bind(
+        tempTaskId,
+        sourceId,
+        dbEnum.taskLanguage[param.target_language],
+        dbEnum.taskDetector[param.detector],
+        dbEnum.taskDirection[direction],
+        dbEnum.taskTranslator[param.translator],
+        dbEnum.taskSize[param.size],
+        WORKER_REVISION,
+      )
       .first<{ id: string; state: number; translation_mask: string | null }>()
 
     // if *somehow* a tasks inserted and finished within the probably sub-100ms window,
