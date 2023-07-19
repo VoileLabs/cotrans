@@ -18,6 +18,12 @@ importers:
         specifier: ^5.1.6
         version: 5.1.6
 
+  types:
+    devDependencies:
+      unbuild:
+        specifier: ^1.2.1
+        version: 1.2.1
+
   userscript:
     dependencies:
       '@solid-primitives/event-listener':
@@ -160,6 +166,9 @@ importers:
       '@cloudflare/workers-types':
         specifier: '=4.20230518.0'
         version: 4.20230518.0
+      '@cotrans/types':
+        specifier: workspace:^
+        version: link:../types
       '@types/node':
         specifier: ^20.4.2
         version: 20.4.2

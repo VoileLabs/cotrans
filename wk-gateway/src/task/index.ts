@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { ofetch } from 'ofetch'
-import type { Bindings, QueryV1Message, QueryV1MessageNotFound } from '../types'
+import type { QueryV1Message, QueryV1MessageNotFound } from '@cotrans/types'
+import type { Bindings } from '../types'
 import { dbEnum } from '../db'
 import { BLANK_PNG } from '../utils'
 import { upload } from './upload'

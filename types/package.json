@@ -1,0 +1,24 @@
+{
+  "name": "@cotrans/types",
+  "type": "module",
+  "version": "0.0.1",
+  "private": false,
+  "license": "Unlicense",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild"
+  },
+  "devDependencies": {
+    "unbuild": "^1.2.1"
+  }
+}

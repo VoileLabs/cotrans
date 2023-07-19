@@ -4,3 +4,4 @@ packages:
   - userscript
   - wk-gateway
   - wkr2
+  - types

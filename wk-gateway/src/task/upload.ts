@@ -2,6 +2,8 @@ import { z } from 'zod'
 import type { Handler, HonoRequest } from 'hono'
 import { ofetch } from 'ofetch'
 import { createId } from '@paralleldrive/cuid2'
+import { HTTPException } from 'hono/http-exception'
+import type { UploadV1Result } from '@cotrans/types'
 import type { Bindings } from '../types'
 import { dbEnum } from '../db'
 import type { MitSubmitParam } from '../mitWorker/dObject'
@@ -80,7 +82,7 @@ export async function parseBody(req: HonoRequest): Promise<z.infer<typeof Param>
     || contentType.startsWith('application/x-www-form-urlencoded'))
     return Param.parse(await req.parseBody())
   else
-    throw new Error('Unsupported content type')
+    throw new Error('Unsupported request content type')
 }
 
 export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }) => {
@@ -103,10 +105,23 @@ export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }
         'Referer': param.url,
       },
     }).then((res) => {
-      if (Number.parseInt(res.headers.get('content-length')!) > FILE_SIZE_LIMIT)
-        throw new Error('File too large')
+      if (Number.parseInt(res.headers.get('content-length')!) > FILE_SIZE_LIMIT) {
+        throw new HTTPException(400, {
+          res: json({
+            id: null,
+            error: 'file-too-large',
+          } satisfies UploadV1Result),
+        })
+      }
       param.mime = param.mime || res.headers.get('content-type') || undefined
       return res.blob()
+    }).catch((_err) => {
+      throw new HTTPException(400, {
+        res: json({
+          id: null,
+          error: 'fetch-failed',
+        } satisfies UploadV1Result),
+      })
     })
 
   const uploadForm = new FormData()
@@ -125,6 +140,13 @@ export const upload: Handler<{ Bindings: Bindings }> = async ({ env, req, json }
     fetcher: env.doImage.get(env.doImage.newUniqueId()),
     method: 'POST',
     body: uploadForm,
+  }).catch((_err) => {
+    throw new HTTPException(500, {
+      res: json({
+        id: null,
+        error: 'resize-crash',
+      } satisfies UploadV1Result),
+    })
   })
 
   const tempSourceId = createId()
@@ -205,7 +227,7 @@ LIMIT 1
             ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${exsitingTaskResult.translation_mask}`
             : BLANK_PNG,
         },
-      })
+      } satisfies UploadV1Result)
     }
 
     // we're being optimistic here,
@@ -239,7 +261,7 @@ RETURNING id, state, translation_mask
             ? `${env.WKR2_PUBLIC_EXPOSED_BASE}/${newTaskResult.translation_mask}`
             : BLANK_PNG,
         },
-      })
+      } satisfies UploadV1Result)
     }
 
     taskId = newTaskResult.id

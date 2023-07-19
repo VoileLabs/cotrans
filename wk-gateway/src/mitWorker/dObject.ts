@@ -2,7 +2,8 @@ import { z } from 'zod'
 import { SignJWT, importPKCS8, importSPKI } from 'jose'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import type { Bindings, GroupQueryV1Message, QueryV1Message } from '../types'
+import type { GroupQueryV1Message, QueryV1Message, UploadV1Result } from '@cotrans/types'
+import type { Bindings } from '../types'
 import { WebSocketMessage } from '../protoGen/gateway.mit_pb'
 import { dbEnum } from '../db'
 import { BLANK_PNG, memo } from '../utils'
@@ -192,8 +193,12 @@ export class DOMitWorker implements DurableObject {
       const mergeGroupsToTask = (oldGroup: string[]) => {
         if (param.group) {
           const group = mergeGroups(oldGroup, task.group)
-          if (group.length > TASK_GROUP_LIMIT)
-            return json({ id: null, error: 'group-limit' }, { status: 400 })
+          if (group.length > TASK_GROUP_LIMIT) {
+            return json({
+              id: null,
+              error: 'group-limit',
+            } satisfies UploadV1Result, { status: 400 })
+          }
           this.incActiveGroup(param.group)
           // since task is always new, we can overwrite this
           task.group = group
@@ -209,9 +214,13 @@ export class DOMitWorker implements DurableObject {
         queue[pos] = task
       }
       else {
-        if (queue.length >= QUEUE_CAP && !await this.gcQueue(false, task.group))
         // if the queue is full, reject the request
-          return json({ id: null, error: 'queue-full' }, { status: 503 })
+        if (queue.length >= QUEUE_CAP && !await this.gcQueue(false, task.group)) {
+          return json({
+            id: null,
+            error: 'queue-full',
+          } satisfies UploadV1Result, { status: 503 })
+        }
 
         // check if the task is in the backlog
         // will task be pushed to backlog and immediately picked up?
@@ -239,7 +248,10 @@ export class DOMitWorker implements DurableObject {
 
       await this.flushQueue()
 
-      return json({ id: task.id, pos: pos === -1 ? queue.length : pos })
+      return json({
+        id: task.id,
+        pos: pos === -1 ? queue.length : pos,
+      } satisfies UploadV1Result)
     })
     .get('/group/event/:group', async ({ req }) => {
       const group = req.param('group')
@@ -710,7 +722,7 @@ export class DOMitWorker implements DurableObject {
             )
             .first<{ id: number } | null>()
           if (!updateResult)
-            throw new Error('Task not found')
+            throw new Error(`Task ${id} not found`)
 
           if (success) {
             const data = {
