@@ -138,9 +138,11 @@ Open the settings page of both workers, do the following:
   - `WKR2_PRIVATE_BASE`: `https://private.r2.wk.cotrans.example.com`
   - `WKR2_PUBLIC_BASE`: `https://public.r2.wk.cotrans.example.com`
   - `WKR2_PUBLIC_EXPOSED_BASE`: `https://r2.cotrans.example.com`
-- Scroll down to the "Durable Object Bindings" section, ensure a dorable object named `doMitWorker` exists.
+- Scroll down to the "Durable Object Bindings" section, ensure the following bindings exist:
+  - `doMitWorker`: bind to `cotrans-wk-gateway-domitworker_DOMitWorker`
+  - `doImage`: bind to `cotrans-wk-image_DOImage`
+  - If not, click "Edit variable" and add the bindings.
 - Scroll down to the "Service Bindings" section, ensure the following bindings exist:
-  - `image`: bind to `cotrans-wk-image`
   - `wkr2_private`: bind to `cotrans-wkr2-private`
   - `wkr2_public`: bind to `cotrans-wkr2-public`
   - If not, click "Edit variable" and add the bindings.
