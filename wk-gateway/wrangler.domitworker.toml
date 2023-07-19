@@ -17,6 +17,3 @@ binding = "DB"
 database_name = "cotrans"
 database_id = "5586b253-f5be-44cc-9ae4-284029d78da0"
 migrations_dir = "../migrations"
-
-[build]
-command = "npm run build"

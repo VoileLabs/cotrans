@@ -23,6 +23,3 @@ migrations_dir = "../migrations"
 
 [placement]
 mode = "smart"
-
-[build]
-command = "npm run build"

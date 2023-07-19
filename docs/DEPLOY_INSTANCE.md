@@ -41,6 +41,9 @@ cd cotrans
 # Install dependencies
 cargo check
 pnpm i
+
+# Build the project
+pnpm build
 ```
 
 ## Deploy R2 buckets and `wkr2`
