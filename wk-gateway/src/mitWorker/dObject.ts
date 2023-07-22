@@ -150,8 +150,13 @@ export class DOMitWorker implements DurableObject {
     .get('/status', async ({ json }) => {
       const queue = await this.getQueue()
       const workers = this.state.getWebSockets('wk')
+      const gcQueueLength = (await this.state.storage.list<MitTask>({
+        prefix: 'gct:',
+        limit: QUEUE_CAP,
+      })).size
       return json({
         queue: queue.length,
+        gc_queue: gcQueueLength,
         workers: workers.length,
       })
     })
