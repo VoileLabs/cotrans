@@ -398,9 +398,27 @@ function reset() {
             </div>
           </div>
 
-          <div v-else class="flex items-center gap-2 max-w-80vw cursor-pointer">
-            <i class="i-ri:image-add-line w-8 h-8 text-zinc-500" />
-            Paste an image, click to select, or drag and drop
+          <div v-else class="flex flex-col items-center justify-center gap-10vh">
+            <div>&nbsp;</div>
+
+            <div class="flex items-center gap-2 max-w-80vw cursor-pointer">
+              <i class="i-ri:image-add-line w-8 h-8 text-zinc-500" />
+              Paste an image, click to select, or drag and drop
+            </div>
+
+            <div class="flex items-center gap-1">
+              <span class="px-2 py-1 rounded-full text-xs text-fuchsia-600 font-bold leading-3 bg-fuchsia-100">
+                note
+              </span>
+              <span>
+                We are migrating to a new server. If you encounter any issues, contact us on
+                <a
+                  class="flex-shrink-0 border-b border-fuchsia-600"
+                  href="https://discord.gg/975FRV8ca6"
+                  target="_blank" rel="noopener noreferrer"
+                >Discord</a>!
+              </span>
+            </div>
           </div>
         </div>
       </label>

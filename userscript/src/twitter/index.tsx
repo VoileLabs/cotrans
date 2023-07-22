@@ -139,6 +139,9 @@ function mount(): TranslatorInstance {
           onProgress(progress) {
             setStatus(t('common.client.submit-progress', { progress }))
           },
+          onFinal() {
+            setStatus(t('common.client.submit-final'))
+          },
         },
         optionsOverwrite,
       ).catch((e) => {

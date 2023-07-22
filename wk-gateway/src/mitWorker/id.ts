@@ -1,6 +1,5 @@
 // k-sortable time based id generator
 // with some help from ChatGPT, obviously
-// "but it's not used anywhere?!" "shut up."
 
 import { memo } from '../utils'
 

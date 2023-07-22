@@ -40,10 +40,10 @@ export interface QueryV1MessageStatus {
    * without receiving an `error` message.
    */
   status: string & {}
-  | 'pending'
-  // cat manga_translator.py | sed -n -E "/\.status\.status = |_report_progress\('/s/^.*'([^']+)'.*$/| '\1'/p" | sort | uniq
+  // cat manga_translator.py | sed -n -E "/server_send_status\(websocket, task\.id, |\.status\.status = |_report_progress\('/s/^.*'([^']+)'.*$/| '\1'/p" | sort | uniq
   | 'colorizing'
   | 'detection'
+  | 'downloading'
   | 'downscaling'
   | 'error'
   | 'error-download'
@@ -54,12 +54,16 @@ export interface QueryV1MessageStatus {
   | 'inpainting'
   | 'mask-generation'
   | 'ocr'
+  | 'pending'
+  | 'preparing'
   | 'rendering'
   | 'saved'
+  | 'saving'
   | 'skip-no-regions'
   | 'skip-no-text'
   | 'textline_merge'
   | 'translating'
+  | 'uploading'
   | 'upscaling'
 }
 

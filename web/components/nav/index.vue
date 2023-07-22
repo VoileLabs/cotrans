@@ -19,7 +19,7 @@
 
       <NuxtLink class="nav-link" to="#">
         Editor
-        <span class="inline-block px-1 pb-px rounded text-xs text-fuchsia-600 font-bold leading-3 ring-1 ring-fuchsia-400">
+        <span class="inline-block px-2 py-.5 rounded-full text-xs text-fuchsia-600 font-bold leading-3 bg-fuchsia-100">
           soon
         </span>
       </NuxtLink>

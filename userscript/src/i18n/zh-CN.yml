@@ -6,6 +6,7 @@ common:
   client:
     submit: 正在提交翻译
     submit-progress: 正在提交翻译({progress})
+    submit-final: 等待图片转存
     submit-error: 提交翻译出错
     download-image: 正在下载图片
     download-image-progress: 正在下载图片({progress})
@@ -16,19 +17,29 @@ common:
     default: 未知状态
     pending: 正在等待
     pending-pos: 正在等待，列队还有 {pos} 张图片
+    downloading: 正在传输图片
+    preparing: 等待空闲窗口
+    colorizing: 正在上色
     upscaling: 正在放大图片
+    downscaling: 正在缩小图片
     detection: 正在检测文本
     ocr: 正在识别文本
     textline_merge: 正在整合文本
     mask-generation: 正在生成文本掩码
     inpainting: 正在修补图片
     translating: 正在翻译文本
-    rendering: 正在渲染
-    downscaling: 正在缩小图片
+    rendering: 正在渲染文本
     finished: 正在整理结果
+    saved: 保存结果
+    saving: 正在保存结果
+    uploading: 正在传输结果
     error: 翻译出错
+    error-download: 传输图片失败
+    error-upload: 传输结果失败
     error-lang: 你选择的翻译服务不支持你选择的语言
     error-translating: 翻译服务没有返回任何文本
+    skip-no-regions: 图片中没有检测到文本区域
+    skip-no-text: 图片中没有检测到文本
     error-with-id: '翻译出错 (ID: {id})'
   control:
     translate: 翻译

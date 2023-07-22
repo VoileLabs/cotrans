@@ -25,7 +25,7 @@ export async function resizeToSubmit(blob: Blob, suffix: string): Promise<{ blob
   if (w <= 4096 && h <= 4096)
     return { blob, suffix }
 
-  // resize to less than 6k
+  // resize to less than 4k
   const scale = Math.min(4096 / w, 4096 / h)
   const width = Math.floor(w * scale)
   const height = Math.floor(h * scale)
@@ -71,6 +71,7 @@ export async function submitTranslate(
   suffix: string,
   listeners: {
     onProgress?: (progress: string) => void
+    onFinal?: () => void
   } = {},
   optionsOverwrite?: TranslateOptionsOverwrite,
 ): Promise<{
@@ -78,7 +79,7 @@ export async function submitTranslate(
   status: string
   result?: TaskResult
 }> {
-  const { onProgress } = listeners
+  const { onProgress, onFinal } = listeners
 
   const formData = new FormData()
   formData.append('file', blob, `image.${suffix}`)
@@ -95,11 +96,16 @@ export async function submitTranslate(
     // @ts-expect-error FormData is supported
     data: formData,
     upload: {
-      onprogress: onProgress
+      onprogress: onProgress || onFinal
         ? (e: ProgressEvent) => {
             if (e.lengthComputable) {
-              const p = formatProgress(e.loaded, e.total)
-              onProgress(p)
+              if (e.loaded >= e.total - 16) {
+                onFinal?.()
+              }
+              else {
+                const p = formatProgress(e.loaded, e.total)
+                onProgress?.(p)
+              }
             }
           }
         : undefined,

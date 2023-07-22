@@ -6,6 +6,7 @@ common:
   client:
     submit: Submitting translation
     submit-progress: Submitting translation ({progress})
+    submit-final: Waiting for image transpile
     submit-error: Error during translation submission
     download-image: Downloading translated image
     download-image-progress: Downloading translated image ({progress})
@@ -16,7 +17,11 @@ common:
     default: Unknown status
     pending: Pending
     pending-pos: Pending, {pos} in queue
+    downloading: Transferring image
+    preparing: Waiting for idle window
+    colorizing: Colorizing
     upscaling: Upscaling
+    downscaling: Downscaling
     detection: Detecting text
     ocr: Scanning text
     textline_merge: Merging text lines
@@ -24,11 +29,17 @@ common:
     inpainting: Inpainting
     translating: Translating
     rendering: Rendering
-    downscaling: Downscaling
     finished: Finishing
+    saved: Saved
+    saving: Saving result
+    uploading: Transferring result
     error: Error during translation
-    error-lang: Your target language is not supported by the chosen translator
+    error-download: Image transfer failed
+    error-upload: Result transfer failed
+    error-lang: The target language is not supported by the chosen translator
     error-translating: Did not get any text back from the text translation service
+    skip-no-regions: No text regions detected in the image
+    skip-no-text: No text detected in the image
     error-with-id: 'Error during translation (ID: {id})'
   control:
     translate: Translate
