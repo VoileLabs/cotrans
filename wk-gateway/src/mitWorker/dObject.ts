@@ -462,7 +462,7 @@ export class DOMitWorker implements DurableObject {
 
       left--
     }
-    if (newQueue.length !== queue.length) {
+    if (newQueue.length < queue.length) {
       // force flush here to ensure the put above is being committed
       await this.putQueue(newQueue, true)
       return true
@@ -542,7 +542,7 @@ export class DOMitWorker implements DurableObject {
       workerWithAttachments = workerWithAttachments
         // max 2 tasks per worker
         .filter(({ attachment }) => {
-          return attachment.q.length < 2
+          return attachment.q.length < 4
         })
         // shortest queue first
         .sort((a, b) => a.attachment.q.length - b.attachment.q.length)
@@ -580,7 +580,7 @@ export class DOMitWorker implements DurableObject {
         .setIssuedAt()
         .setAudience('wk:r2:private')
         .setIssuer('wk:gateway:mit')
-        .setExpirationTime('5min')
+        .setExpirationTime('10min')
         .sign(privateKey)
       const sourceImageUrl = `${this.env.WKR2_PRIVATE_BASE}/${task.file}?t=${sourceImageToken}`
 
@@ -592,7 +592,7 @@ export class DOMitWorker implements DurableObject {
         .setIssuedAt()
         .setAudience('wk:r2:public')
         .setIssuer('wk:gateway:mit')
-        .setExpirationTime('5min')
+        .setExpirationTime('10min')
         .sign(privateKey)
       const translationMaskUrl = `${this.env.WKR2_PUBLIC_BASE}/${translationMask}?t=${translationMaskToken}`
 
@@ -708,7 +708,7 @@ export class DOMitWorker implements DurableObject {
           }
         }
 
-        ws.close(1011, 'Unknown task')
+        // ws.close(1011, 'Unknown task')
         return
       }
       case 'finishTask': {
@@ -718,7 +718,7 @@ export class DOMitWorker implements DurableObject {
 
         const tIndex = attachment.q.findIndex(t => t[0] === id)
         if (tIndex === -1) {
-          ws.close(1011, 'Unknown task')
+          // ws.close(1011, 'Unknown task')
           return
         }
 
