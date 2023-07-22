@@ -621,6 +621,22 @@ export class DOMitWorker implements DurableObject {
         )
     }
 
+    queue.forEach((task, i) => {
+      const listeners = this.state.getWebSockets(`ls:${task.id}`)
+      const groupListeners = task.group.map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
+
+      const data = {
+        type: 'pending',
+        pos: i + 1,
+      } as const
+      const msg = JSON.stringify(data satisfies QueryV1Message)
+      for (const listener of listeners)
+        listener.send(msg)
+      const gmsg = JSON.stringify({ id: task.id, ...data } satisfies GroupQueryV1Message)
+      for (const listener of groupListeners)
+        listener.send(gmsg)
+    })
+
     for (const [ws, attachment] of dirtyWS) {
       // @ts-expect-error Cloudflare specific
       ws.serializeAttachment(attachment)
