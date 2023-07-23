@@ -2,15 +2,15 @@
 const config = useRuntimeConfig()
 
 const visibility = useDocumentVisibility()
-const { counter, pause, resume } = useInterval(15 * 1000, {
-  controls: true,
-  immediate: true,
-})
+const { counter, pause, resume } = useInterval(15 * 1000, { controls: true })
 watchEffect(() => {
-  if (visibility.value === 'hidden')
+  if (visibility.value === 'hidden') {
     pause()
-  else
+  }
+  else {
+    counter.value++
     resume()
+  }
 })
 
 const { data: status } = useFetch<{
