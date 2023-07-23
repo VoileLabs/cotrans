@@ -166,7 +166,7 @@ RETURNING id
       sourceInfo.height,
     )
     .first<{ id: string }>()
-  const sourceId = sourceResult.id
+  const sourceId = sourceResult!.id
 
   const tempTaskId = createId()
 
@@ -191,7 +191,7 @@ RETURNING id, state, translation_mask
         dbEnum.taskState.pending,
       )
       .first<{ id: string; state: number; translation_mask: string | null }>()
-    taskId = taskResult.id
+    taskId = taskResult!.id
   }
   else {
     const exsitingTaskResult = await env.DB
@@ -217,7 +217,7 @@ LIMIT 1
         dbEnum.taskSize[param.size],
         WORKER_REVISION,
       )
-      .first<{ id: string; state: number; translation_mask: string | null } | null>()
+      .first<{ id: string; state: number; translation_mask: string | null }>()
 
     if (exsitingTaskResult?.state === dbEnum.taskState.done) {
       return json({
@@ -232,7 +232,7 @@ LIMIT 1
 
     // we're being optimistic here,
     // if there's a race creating two similar tasks, we'll process both
-    const newTaskResult = await env.DB
+    const newTaskResult = (await env.DB
       .prepare(`
 INSERT INTO task (id, source_image_id, target_language, detector, direction, translator, size, worker_revision)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
@@ -249,7 +249,7 @@ RETURNING id, state, translation_mask
         dbEnum.taskSize[param.size],
         WORKER_REVISION,
       )
-      .first<{ id: string; state: number; translation_mask: string | null }>()
+      .first<{ id: string; state: number; translation_mask: string | null }>())!
 
     // if *somehow* a tasks inserted and finished within the probably sub-100ms window,
     // we'll return that as well
