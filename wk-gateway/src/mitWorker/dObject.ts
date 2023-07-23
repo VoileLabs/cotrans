@@ -12,7 +12,7 @@ import { TTLSet } from './ttl'
 
 const QUEUE_CAP = 40
 const QUEUE_GC_TARGET = 20
-const QUEUE_GC_PICKUP = 4
+const QUEUE_GC_PICKUP = 2
 const QUEUE_GC_PICKUP_COUNT = 4
 const QUEUE_KEEP_ALIVE_TIMEOUT = 5 * 1000
 const TASK_GROUP_LIMIT = 4
@@ -152,7 +152,7 @@ export class DOMitWorker implements DurableObject {
       const workers = this.state.getWebSockets('wk')
       const gcQueueLength = (await this.state.storage.list<MitTask>({
         prefix: 'gct:',
-        limit: QUEUE_CAP,
+        limit: 160,
       })).size
       return json({
         queue: queue.length,
