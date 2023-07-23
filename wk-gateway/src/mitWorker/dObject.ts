@@ -75,6 +75,8 @@ interface WsWorkerAttachment {
     string,
     // group
     string[],
+    // last_updated_at
+    number,
   ][]
 }
 
@@ -572,7 +574,7 @@ export class DOMitWorker implements DurableObject {
       }
 
       const translationMask = `mask/${task.id}.png`
-      attachment.q.push([task.id, 'pending', translationMask, task.group])
+      attachment.q.push([task.id, 'pending', translationMask, task.group, Date.now()])
       dirtyWS.set(ws, attachment)
 
       // kenton@cloudflare: No. Only awaiting external I/O counts.
@@ -697,6 +699,7 @@ export class DOMitWorker implements DurableObject {
         for (const task of attachment.q) {
           if (task[0] === id) {
             task[1] = status
+            task[4] = Date.now()
 
             const listeners = this.state.getWebSockets(`ls:${task[0]}`)
             const groupListeners = task[3].map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
@@ -905,6 +908,17 @@ export class DOMitWorker implements DurableObject {
         continue
       }
       taskIds.add(task.id)
+    }
+
+    // drop timeout tasks
+    const workers = withAttachment<WsWorkerAttachment>(this.state.getWebSockets('wk'))
+    for (const { ws, attachment } of workers) {
+      for (const task of attachment.q) {
+        if (now - task[4] > 120 * 1000) {
+          ws.close(1011, 'Timeout')
+          break
+        }
+      }
     }
   }
 }
