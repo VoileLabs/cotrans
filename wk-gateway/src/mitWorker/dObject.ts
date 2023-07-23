@@ -158,6 +158,8 @@ export class DOMitWorker implements DurableObject {
         queue: queue.length,
         gc_queue: gcQueueLength,
         workers: workers.length,
+        object_created: this.objectCreated,
+        last_socket_cleanup: this.lastSocketCleanup,
       })
     })
     .get('/worker_ws', async ({ req }) => {
@@ -237,8 +239,7 @@ export class DOMitWorker implements DurableObject {
           mergeGroupsToTask(group)
 
           // no need to await here, since there's a put queue after
-          this.state.storage.delete(`gct:${task.id}`)
-          this.state.storage.delete(`gcs:${sid}`)
+          this.state.storage.delete([`gct:${task.id}`, `gcs:${sid}`])
         }
 
         queue.push(task)
@@ -438,6 +439,7 @@ export class DOMitWorker implements DurableObject {
 
     const newQueue = []
     let left = queue.length - QUEUE_GC_TARGET
+    const records: Record<string, unknown> = {}
     for (let i = 0; i < queue.length; i++) {
       if (left <= 0) {
         newQueue.push(...queue.slice(i))
@@ -458,9 +460,9 @@ export class DOMitWorker implements DurableObject {
       // put task in backlog
       const sid = createSortableId()
       // we'll await later
-      this.state.storage.put<MitTask>(`gcs:${sid}`, task)
+      records[`gcs:${sid}`] = task
       // we need two indexes, another for deletion on submit
-      this.state.storage.put<MitTaskS>(`gct:${task.id}`, [sid, { group: task.group }])
+      records[`gct:${task.id}`] = [sid, { group: task.group }]
 
       for (const g of task.group)
         await this.decActiveGroup(g)
@@ -468,7 +470,8 @@ export class DOMitWorker implements DurableObject {
       left--
     }
     if (newQueue.length < queue.length) {
-      // force flush here to ensure the put above is being committed
+      if (Object.keys(records).length > 0)
+        await this.state.storage.put(records)
       await this.putQueue(newQueue, true)
       return true
     }
@@ -496,8 +499,7 @@ export class DOMitWorker implements DurableObject {
     }
 
     const newQueue = queue.concat(newTasks)
-    this.state.storage.delete(Array.from(tasks.keys()))
-    this.state.storage.delete(newTasks.map(task => `gct:${task.id}`))
+    this.state.storage.delete(Array.from(tasks.keys()).concat(newTasks.map(task => `gct:${task.id}`)))
 
     await this.putQueue(newQueue, true)
   }
@@ -889,6 +891,17 @@ export class DOMitWorker implements DurableObject {
         ws.close(1011, 'Timeout')
         continue
       }
+    }
+
+    // dedupe tasks in gc queue
+    const tasks = await this.state.storage.list<MitTask>({ prefix: 'gcs:' })
+    const taskIds = new Set<string>()
+    for (const [key, task] of tasks) {
+      if (taskIds.has(task.id)) {
+        this.state.storage.delete(key)
+        continue
+      }
+      taskIds.add(task.id)
     }
   }
 }
