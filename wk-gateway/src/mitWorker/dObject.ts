@@ -197,7 +197,7 @@ export class DOMitWorker implements DurableObject {
         size: param.size,
       }
 
-      const queue = await this.getQueue()
+      let queue = await this.getQueue()
 
       const mergeGroupsToTask = (oldGroup: string[]) => {
         if (param.group) {
@@ -224,11 +224,16 @@ export class DOMitWorker implements DurableObject {
       }
       else {
         // if the queue is full, reject the request
-        if (queue.length >= QUEUE_CAP && !await this.gcQueue(false, task.group)) {
-          return json({
-            id: null,
-            error: 'queue-full',
-          } satisfies UploadV1Result, { status: 503 })
+        if (queue.length >= QUEUE_CAP) {
+          if (await this.gcQueue(false, task.group)) {
+            queue = await this.getQueue()
+          }
+          else {
+            return json({
+              id: null,
+              error: 'queue-full',
+            } satisfies UploadV1Result, { status: 503 })
+          }
         }
 
         // check if the task is in the backlog
@@ -535,11 +540,7 @@ export class DOMitWorker implements DurableObject {
     if (pickup)
       await this.gcPickup()
 
-    let workerWithAttachments = workers.map((ws) => {
-      // @ts-expect-error Cloudflare specific
-      const attachment: WsWorkerAttachment = ws.deserializeAttachment()
-      return { ws, attachment }
-    })
+    let workerWithAttachments = withAttachment<WsWorkerAttachment>(workers)
     const queue = await this.getQueue()
 
     const processingIds = workerWithAttachments
@@ -549,9 +550,9 @@ export class DOMitWorker implements DurableObject {
 
     while (queue.length > 0) {
       workerWithAttachments = workerWithAttachments
-        // max 2 tasks per worker
+        // max 6 tasks per worker
         .filter(({ attachment }) => {
-          return attachment.q.length < 4
+          return attachment.q.length < 6
         })
         // shortest queue first
         .sort((a, b) => a.attachment.q.length - b.attachment.q.length)
