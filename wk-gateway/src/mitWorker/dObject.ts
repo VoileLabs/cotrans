@@ -625,6 +625,19 @@ export class DOMitWorker implements DurableObject {
       })
       ws.send(msg.toBinary())
 
+      const listeners = this.state.getWebSockets(`ls:${task.id}`)
+      const groupListeners = task.group.map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
+      const data = {
+        type: 'status',
+        status: 'pending',
+      } as const
+      const lmsg = JSON.stringify(data satisfies QueryV1Message)
+      for (const listener of listeners)
+        listener.send(lmsg)
+      const gmsg = JSON.stringify({ id: task.id, ...data } satisfies GroupQueryV1Message)
+      for (const listener of groupListeners)
+        listener.send(gmsg)
+
       Promise.resolve()
         .then(() => this.env.DB
           .prepare('UPDATE task SET last_attempted_at = ? WHERE id = ?')
@@ -636,7 +649,6 @@ export class DOMitWorker implements DurableObject {
     queue.forEach((task, i) => {
       const listeners = this.state.getWebSockets(`ls:${task.id}`)
       const groupListeners = task.group.map(g => this.state.getWebSockets(`lsg:${g}`)).flat()
-
       const data = {
         type: 'pending',
         pos: i + 1,
