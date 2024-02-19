@@ -243,7 +243,7 @@ function saveAsPNG() {
 
   const a = document.createElement('a')
   a.href = resultUri.value
-  a.download = `translation-${taskId}.png`
+  a.download = `translation-${taskId.value}.png`
   a.classList.add('hidden')
   document.body.appendChild(a)
   a.click()
